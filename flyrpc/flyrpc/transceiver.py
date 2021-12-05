@@ -6,6 +6,7 @@ from json.decoder import JSONDecodeError
 
 from flyrpc.util import start_daemon_thread, stream_is_binary
 
+
 class MyTransceiver:
     def __init__(self):
         # initialize variables
@@ -43,7 +44,6 @@ class MyTransceiver:
                 request_list = self.queue.get_nowait()
             except Empty:
                 break
-
             self.handle_request_list(request_list)
 
     def register_function(self, function, name=None):
@@ -82,6 +82,37 @@ class MyTransceiver:
             # will happen if the other side disconnected
             pass
 
+'''
+import concurrent.futures
+
+class MsiTransceiver(MyTransceiver):
+    def handle_request_list(self, request_list):
+        if not isinstance(request_list, list):
+            return
+
+        for request in request_list:
+            if isinstance(request, dict) and ('name' in request) and (request['name'] in self.functions):
+                if ('name2' in request) and (request['name2'] in self.functions):
+                    args = request.get('args', [])
+                    kwargs = request.get('kwargs', {})
+                    function = self.functions[request['name']]
+
+                    args2 = request.get('args2', [])
+                    kwargs2 = request.get('kwargs2', {})
+                    function2 = self.functions[request['name2']]
+                    with concurrent.futures.ThreadPoolExecutor() as executor:
+                        executor.submit(function, *args, **kwargs)
+                        executor.submit(function2, *args2, **kwargs2)
+
+                else:
+                    # get function call parameters
+                    function = self.functions[request['name']]
+                    args = request.get('args', [])
+                    kwargs = request.get('kwargs', {})
+
+                    # call function
+                    function(*args, **kwargs)
+'''
 
 class MySocketClient(MyTransceiver):
     def __init__(self, host=None, port=None):
@@ -121,6 +152,7 @@ class MySocketClient(MyTransceiver):
                 self.queue.put(request_list)
         except (OSError, ConnectionResetError):
             pass
+
 
 
 class MySocketServer(MyTransceiver):
@@ -199,3 +231,8 @@ class MySocketServer(MyTransceiver):
 
             if self.auto_stop:
                 self.shutdown_flag.set()
+
+
+
+
+
