@@ -204,6 +204,7 @@ class StimDisplay(QtOpenGL.QGLWidget):
         :param t: Time corresponding to t=0 of the animation
         :param append_stim_frames: bool, append frames to stim_frames list, for saving stim movie. May affect performance.
         """
+        print('command executed to screen at %s' % time.time())
         self.profile_frame_times = []
         self.stim_frames = []
         self.append_stim_frames = append_stim_frames
@@ -438,6 +439,7 @@ def main():
     # ref: https://stackoverflow.com/questions/2300401/qapplication-how-to-shutdown-gracefully-on-ctrl-c
     signal.signal(signal.SIGINT, signal.SIG_DFL)
     sys.exit(app.exec_())
+
 
 if __name__ == '__main__':
     main()
