@@ -1,7 +1,5 @@
 from time import sleep
 
-import flyrpc.multicall
-
 from visprotocol.protocol import clandinin_protocol
 
 
