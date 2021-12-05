@@ -1,0 +1,3 @@
+[submodule "flyrpc"]
+	path = flyrpc
+	url = https://github.com/ClandininLab/flyrpc.git
