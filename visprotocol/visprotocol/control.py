@@ -34,7 +34,8 @@ class EpochRun():
         """
         self.stop = False
         self.pause = False
-        client.manager.set_idle_background(protocol_object.run_parameters['idle_color'])
+        protocol_object.setBackground(client)
+        #client.manager.set_idle_background(protocol_object.run_parameters['idle_color'])
 
         if save_metadata_flag:
             data.createEpochRun(protocol_object)

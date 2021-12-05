@@ -82,6 +82,9 @@ class BaseProtocol():
     def advanceEpochCounter(self):
         self.num_epochs_completed += 1
 
+    def setBackground(self, client):
+        client.manager.set_idle_background(self.run_parameters['idle_color'])
+
     def loadStimuli(self, client):
         bg = self.run_parameters.get('idle_color')
         multicall = flyrpc.multicall.MyMultiCall(client.manager)
@@ -278,3 +281,6 @@ class BaseProtocol():
                            'theta': x_trajectory,
                            'phi': y_trajectory}
         return spot_parameters
+
+
+
