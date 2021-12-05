@@ -22,7 +22,7 @@ from visanalysis import plugin
 from visprotocol.clandinin_client import Client
 from visprotocol import clandinin_data, util, protocol
 from visprotocol.control import EpochRun
-
+from visprotocol.protocol.clandinin_protocol import DuoProtocol
 
 class ImagingExperimentGUI(QWidget):
 
@@ -142,6 +142,12 @@ class ImagingExperimentGUI(QWidget):
         self.show()
 
     def main_tab_layout(self):
+
+        # DuoProtocol
+        self.multistimCheckBox = QCheckBox('Multistim')
+        self.multistimCheckBox.setChecked(False)
+        self.control_grid.addWidget(self.multistimCheckBox, 3, 0)
+        self.multistimCheckBox.toggled.connect(lambda: self.onToggleBox(self.multistimCheckBox))
 
         # View button:
         self.viewButton = QPushButton("View", self)
@@ -612,6 +618,16 @@ class ImagingExperimentGUI(QWidget):
                 self.series_counter_input.setValue(self.data.getHighestSeriesCount() + 1)
                 self.updateExistingFlyInput()
                 self.populateGroups()
+
+
+    def onToggleBox(self, box):
+        if box.text() == 'Multistim':
+            if box.isChecked() == True:
+                self.pre_protocol_project = self.protocol_object
+                if self.aprotocol and self.vprotocol:
+                    self.protocol_object = DuoProtocol(self.cfg, self.vprotocol, self.aprotocol)
+            else:
+                self.protocol_object = self.pre_protocol_project
 
 
     def onCreatedFly(self):

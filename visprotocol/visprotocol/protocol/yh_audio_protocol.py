@@ -1,26 +1,9 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 from time import sleep
 
 from visprotocol.protocol import clandinin_protocol
-
-
-class DuoProtocol(clandinin_protocol.BaseProtocol):
-    '''
-    Todo:
-    1, combine the parameters of the vprotocol and aprotocol for saving the epoch data
-    2, use multicall or not, to send the load or start command
-    '''
-    def __init__(self, cfg, vprotocol, aprotocol):
-        super().__init__(cfg)
-        self.vprotocol = vprotocol
-        self.aprotocol = aprotocol
-
-
-    def loadStimuli(self, client):
-        pass
-
-
-    def startStimuli(self, client, append_stim_frames=False, print_profile=True):
-        pass
 
 
 
