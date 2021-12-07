@@ -10,6 +10,7 @@ from visprotocol.protocol import clandinin_protocol
 class BaseProtocol(clandinin_protocol.BaseProtocol):
     def __init__(self, cfg):
         super().__init__(cfg)
+        self.ptype = 'auditory'
 
     def setBackground(self, client):
         pass

@@ -23,6 +23,7 @@ import visprotocol
 
 class BaseProtocol():
     def __init__(self, cfg):
+        self.ptype = 'visual'
         self.num_epochs_completed = 0
         self.parameter_preset_directory = os.path.curdir
         self.send_ttl = False
@@ -297,12 +298,37 @@ class DuoProtocol(BaseProtocol):
         super().__init__(cfg)
         self.vprotocol = vprotocol
         self.aprotocol = aprotocol
+        self.combineRunParams()
+
+
+    def combineRunParams(self):
+        self.run_parameters = self.aprotocol.run_parameters
+        self.run_parameters['protocol_ID'] = self.vprotocol.run_parameters['protocol_ID']+'_'+self.aprotocol.run_parameters['protocol_ID']
+
+
+    def combineProtocolParams(self):
+        pass
 
 
     def loadStimuli(self, client):
-        pass
-
+        self.vprotocol.loadStimuli(client)
+        self.aprotocol.loadStimuli(client)
 
     def startStimuli(self, client, append_stim_frames=False, print_profile=True):
-        pass
+        sleep(self.run_parameters['pre_time'])
+        multicall = flyrpc.multicall.MyMultiCall(client.manager)
+        # stim time
+        multicall.start_stim(append_stim_frames=append_stim_frames)
+        multicall.start_corner_square()
+        multicall.start_stim(device='speaker')
+        multicall()
+        sleep(self.run_parameters['stim_time'])
 
+        # tail time
+        # multicall = flyrpc.multicall.MyMultiCall(client.manager)
+        multicall.stop_stim(print_profile=print_profile)
+        multicall.black_corner_square()
+        multicall.stop_stim(device='speaker')
+        multicall()
+
+        sleep(self.run_parameters['tail_time'])

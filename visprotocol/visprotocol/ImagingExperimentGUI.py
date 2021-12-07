@@ -60,6 +60,8 @@ class ImagingExperimentGUI(QWidget):
 
         self.vprotocol = None
         self.aprotocol = None
+        self.run_params_dict = [0,1,2,3]
+        self.protocol_params_dict = [0,1,2,3]
 
             # start a data object
         if self.protocol_object.rig == 'AODscope':
@@ -626,6 +628,7 @@ class ImagingExperimentGUI(QWidget):
                 self.pre_protocol_project = self.protocol_object
                 if self.aprotocol and self.vprotocol:
                     self.protocol_object = DuoProtocol(self.cfg, self.vprotocol, self.aprotocol)
+
             else:
                 self.protocol_object = self.pre_protocol_project
 
@@ -661,7 +664,8 @@ class ImagingExperimentGUI(QWidget):
 
     def updateProtocolParametersInput(self, grid):
         # update display window to show parameters for this protocol
-        self.protocol_parameter_input = {}  # clear old input params dict
+        #self.protocol_parameter_input = {}  # clear old input params dict
+        self.protocol_params_dict[self.tabs.currentIndex()] = {}
         space_ct = 5
         ct = 0
         for key, value in self.protocol_object.protocol_parameters.items():
@@ -670,20 +674,23 @@ class ImagingExperimentGUI(QWidget):
             grid.addWidget(newLabel, self.run_params_ct + space_ct + ct, 0)  # was +5
 
             if isinstance(value, bool):
-                self.protocol_parameter_input[key] = QCheckBox()
-                self.protocol_parameter_input[key].setChecked(value)
+                self.protocol_params_dict[self.tabs.currentIndex()][key] = QCheckBox()
+                self.protocol_params_dict[self.tabs.currentIndex()][key].setChecked(value)
             else:
-                self.protocol_parameter_input[key] = QLineEdit()
+                self.protocol_params_dict[self.tabs.currentIndex()][key] = QLineEdit()
                 if isinstance(value, int):
-                    self.protocol_parameter_input[key].setValidator(QtGui.QIntValidator())
+                    self.protocol_params_dict[self.tabs.currentIndex()][key].setValidator(QtGui.QIntValidator())
                 elif isinstance(value, float):
-                    self.protocol_parameter_input[key].setValidator(QtGui.QDoubleValidator())
+                    self.protocol_params_dict[self.tabs.currentIndex()][key].setValidator(QtGui.QDoubleValidator())
 
-                self.protocol_parameter_input[key].setText(str(value))  # set to default value
-            grid.addWidget(self.protocol_parameter_input[key], self.run_params_ct + space_ct + ct, 1, 1, 2) # was +5
+                self.protocol_params_dict[self.tabs.currentIndex()][key].setText(str(value))  # set to default value
+            grid.addWidget(self.protocol_params_dict[self.tabs.currentIndex()][key], self.run_params_ct + space_ct + ct, 1, 1, 2) # was +5
+
+        self.protocol_parameter_input = self.protocol_params_dict[self.tabs.currentIndex()]
 
 
-    def  updateParameterPresetSelector(self, grid):
+
+    def updateParameterPresetSelector(self, grid):
         self.parameter_preset_comboBox = QComboBox(self)
         self.parameter_preset_comboBox.addItem("Default")
         for name in self.protocol_object.parameter_presets.keys():
@@ -729,6 +736,7 @@ class ImagingExperimentGUI(QWidget):
     def updateRunParamtersInput(self, grid):
         self.run_params_ct = 0
         # Run parameters list
+        self.run_params_dict[self.tabs.currentIndex()] = {}
         for key, value in self.protocol_object.run_parameters.items():
             if key not in ['protocol_ID', 'run_start_time']:
                 self.run_params_ct += 1
@@ -741,16 +749,18 @@ class ImagingExperimentGUI(QWidget):
                 newLabel = QLabel(key + ':')
                 grid.addWidget(newLabel, 2 + self.run_params_ct, 0)
 
-                self.run_parameter_input[key] = QLineEdit()
+                self.run_params_dict[self.tabs.currentIndex()][key] = QLineEdit()
                 if isinstance(value, int):
                     validator = QtGui.QIntValidator()
                     validator.setBottom(0)
                 elif isinstance(value, float):
                     validator = QtGui.QDoubleValidator()
                     validator.setBottom(0)
-                self.run_parameter_input[key].setValidator(validator)
-                self.run_parameter_input[key].setText(str(value))
-                grid.addWidget(self.run_parameter_input[key], 2 + self.run_params_ct, 1, 1, 1)
+                self.run_params_dict[self.tabs.currentIndex()][key].setValidator(validator)
+                self.run_params_dict[self.tabs.currentIndex()][key].setText(str(value))
+                grid.addWidget(self.run_params_dict[self.tabs.currentIndex()][key], 2 + self.run_params_ct, 1, 1, 1)
+
+        self.run_parameter_input = self.run_params_dict[self.tabs.currentIndex()]
 
 
     def onEnteredSeriesCount(self):
@@ -819,23 +829,40 @@ class ImagingExperimentGUI(QWidget):
 
 
     def updateParametersFromFillableFields(self):
-        for key, value in self.run_parameter_input.items():
-            self.protocol_object.run_parameters[key] = float(self.run_parameter_input[key].text())
 
-        for key, value in self.protocol_parameter_input.items():
-            if isinstance(self.protocol_parameter_input[key], QCheckBox): #QCheckBox
-                self.protocol_object.protocol_parameters[key] = self.protocol_parameter_input[key].isChecked()
-            elif isinstance(self.protocol_object.protocol_parameters[key], str):
-                self.protocol_object.protocol_parameters[key] = self.protocol_parameter_input[key].text() # Pass the string
+        if isinstance(self.protocol_object, DuoProtocol):
+            pass
+        else:
+            self.protocol_object.run_parameters = self.runParamsSerializer(self.run_parameter_input)
+            self.protocol_object.protocol_parameters = self.protocolParamsSerializer(self.protocol_parameter_input)
+
+
+    def runParamsSerializer(self, run_params_input):
+        run_params = {}
+        for key, value in run_params_input.items():
+            run_params[key] = float(value.text())
+
+        return run_params
+
+
+    def protocolParamsSerializer(self, protocol_params_input):
+        protocol_params = {}
+        for key, value in protocol_params_input.items():
+            if isinstance(value, QCheckBox): #QCheckBox
+                protocol_params[key] = value.isChecked()
+            elif isinstance(value, str):
+                protocol_params[key] = value.text() # Pass the string
             else:  # QLineEdit
-                new_param_entry = self.protocol_parameter_input[key].text()
+                new_param_entry = value.text()
 
                 if new_param_entry[0] == '[':  # User trying to enter a list of values
                     to_a_list = []
                     for x in new_param_entry[1:-1].split(','): to_a_list.append(float(x))
-                    self.protocol_object.protocol_parameters[key] = to_a_list
+                    protocol_params[key] = to_a_list
                 else:
-                    self.protocol_object.protocol_parameters[key] = float(new_param_entry)
+                    protocol_params[key] = float(new_param_entry)
+
+        return protocol_params
 
 
     def populateGroups(self):
