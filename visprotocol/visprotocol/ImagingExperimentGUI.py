@@ -831,14 +831,14 @@ class ImagingExperimentGUI(QWidget):
     def updateParametersFromFillableFields(self):
 
         if isinstance(self.protocol_object, DuoProtocol):
-            self.protocol_object.run_parameters = self.runParamsSerializer(self.run_parameter_input)
-            self.protocol_object.vprotocol.run_parameters = self.runParamsSerializer(self.run_params_dict[1])
-            self.protocol_object.aprotocol.run_parameters = self.runParamsSerializer(self.run_params_dict[2])
-            self.protocol_object.vprotocol.protocol_parameters = self.protocolParamsSerializer(self.protocol_params_dict[1])
-            self.protocol_object.aprotocol.protocol_parameters = self.protocolParamsSerializer(self.protocol_params_dict[2])
+            self.protocol_object.run_parameters.update(self.runParamsSerializer(self.run_parameter_input))
+            self.protocol_object.vprotocol.run_parameters.update(self.runParamsSerializer(self.run_params_dict[1]))
+            self.protocol_object.aprotocol.run_parameters.update(self.runParamsSerializer(self.run_params_dict[2]))
+            self.protocol_object.vprotocol.protocol_parameters.update(self.protocolParamsSerializer(self.protocol_params_dict[1]))
+            self.protocol_object.aprotocol.protocol_parameters.update(self.protocolParamsSerializer(self.protocol_params_dict[2]))
         else:
-            self.protocol_object.run_parameters = self.runParamsSerializer(self.run_parameter_input)
-            self.protocol_object.protocol_parameters = self.protocolParamsSerializer(self.protocol_parameter_input)
+            self.protocol_object.run_parameters.update(self.runParamsSerializer(self.run_parameter_input))
+            self.protocol_object.protocol_parameters.update(self.protocolParamsSerializer(self.protocol_parameter_input))
 
 
     def runParamsSerializer(self, run_params_input):
