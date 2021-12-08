@@ -356,5 +356,19 @@ class DuoProtocol(BaseProtocol):
         multicall.black_corner_square()
         multicall.stop_stim(device='speaker')
         multicall()
+        sleep(self.run_parameters['tail_time'])
+
+        '''  # it seems that the two methods (w/ multicall) are similar in terms of time jittering
+        client.manager.start_stim(append_stim_frames=append_stim_frames)
+        client.manager.start_corner_square()
+        client.manager.start_stim(device='speaker')
+        sleep(self.run_parameters['stim_time'])
+
+        # tail time
+        client.manager.stop_stim(print_profile=print_profile)
+        client.manager.black_corner_square()
+        client.manager.stop_stim(device='speaker')
 
         sleep(self.run_parameters['tail_time'])
+        '''
+

@@ -55,8 +55,7 @@ class AudioPlay:
 
 
 
-    def start_stim(self, delay=0.0):
-        sleep(delay)
+    def start_stim(self):
         print('command executed to speaker at %s' % time())
         if (self.soundTrack is not None) and (len(self.soundTrack) > 0):
             self.stream.write(self.soundTrack, num_frames=len(self.soundTrack))
