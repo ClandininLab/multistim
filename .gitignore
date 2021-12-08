@@ -4,6 +4,9 @@
 # Setting file
 *.idea
 
+# tests
+test
+
 # Log file
 *.log
 

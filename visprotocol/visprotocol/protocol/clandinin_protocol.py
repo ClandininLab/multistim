@@ -310,12 +310,29 @@ class DuoProtocol(BaseProtocol):
 
 
     def combineProtocolParams(self):
-        pass
+        # combine the parameters of two protocols, just for saving purpose
+        self.protocol_parameters = {}
+        for key, value in self.vprotocol.protocol_parameters.items():
+            self.protocol_parameters[key+'_visual'] = value
+
+        for key, value in self.aprotocol.protocol_parameters.items():
+            self.protocol_parameters[key + '_auditory'] = value
+
+
+    def combineEpochParams(self):
+        # combine the parameters of each epoch, just for saving purpose
+        self.epoch_parameters = {}
+        for key, value in self.vprotocol.epoch_parameters.items():
+            self.epoch_parameters[key + '_visual'] = value
+
+        for key, value in self.aprotocol.epoch_parameters.items():
+            self.epoch_parameters[key + '_auditory'] = value
 
 
     def getEpochParameters(self):
         self.vprotocol.getEpochParameters()
         self.aprotocol.getEpochParameters()
+        self.combineEpochParams()
 
 
 
