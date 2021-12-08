@@ -303,11 +303,20 @@ class DuoProtocol(BaseProtocol):
 
     def combineRunParams(self):
         self.run_parameters = self.aprotocol.run_parameters
-        self.run_parameters['protocol_ID'] = self.vprotocol.run_parameters['protocol_ID']+'_'+self.aprotocol.run_parameters['protocol_ID']
+        try:
+            self.run_parameters['protocol_ID'] = self.vprotocol.run_parameters['protocol_ID'] + '_' + self.aprotocol.run_parameters['protocol_ID']
+        except:
+            self.run_parameters['protocol_ID'] = 'duo_protocol'
 
 
     def combineProtocolParams(self):
         pass
+
+
+    def getEpochParameters(self):
+        self.vprotocol.getEpochParameters()
+        self.aprotocol.getEpochParameters()
+
 
 
     def loadStimuli(self, client):
