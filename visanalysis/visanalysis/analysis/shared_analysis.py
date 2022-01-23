@@ -26,6 +26,9 @@ def matchQuery(epoch_parameters, query):
 
 def filterTrials(epoch_response, ID, query, return_inds=False):
     matching_trials = np.where([matchQuery(ep, query) for ep in ID.getEpochParameters()])[0]
+    max_num_trials = epoch_response.shape[1]
+    matching_trials = matching_trials[matching_trials < max_num_trials]
+
 
     if return_inds:
         return epoch_response[:, matching_trials, :], matching_trials
@@ -36,27 +39,38 @@ def getUniqueParameterCombinations(param_keys, ID):
     ep_params = [[ep.get(x, None) for x in param_keys]for ep in ID.getEpochParameters()]
     return list({tuple(row) for row in ep_params})
 
-def plotResponseByCondition(ImagingData, roi_name, condition, eg_ind=0):
-    roi_data = ImagingData.getRoiResponses(roi_name)
+def plotResponseByCondition(ImagingData, roi_name, condition, eg_ind=0, background_subtraction=False):
+    roi_data = ImagingData.getRoiResponses(roi_name, background_subtraction=background_subtraction)
 
     unique_parameter_values = np.unique([ep.get(condition) for ep in ImagingData.getEpochParameters()])
     fh, ax = plt.subplots(1, len(unique_parameter_values), figsize=(8, 2))
     [x.set_axis_off() for x in ax]
-    [x.set_ylim([-0.25, 1.0]) for x in ax]
+    [x.set_ylim([-0.25, 0.3]) for x in ax]
     for p_ind, param_value in enumerate(unique_parameter_values):
         query = {condition: param_value}
         trials = filterTrials(roi_data.get('epoch_response'), ImagingData, query)
         ax[p_ind].plot(roi_data.get('time_vector'), np.mean(trials[eg_ind, :, :], axis=0), linestyle='-', color=ImagingData.colors[0])
 
         if p_ind == 0:  # scale bar
-            plot_tools.addScaleBars(ax[p_ind], dT=1, dF=0.5, F_value=-0.25, T_value = -0.2)
+            plot_tools.addScaleBars(ax[p_ind], dT=1, dF=0.1, F_value=-0.25, T_value = -0.2)
+
+def collectResponseByCondition(ImagingData, roi_response, condition, eg_ind=0, para_ind=0):
+    '''
+    TODO: make sure the eg_ind is correct here, and add a selection for which parameter to choose
+    '''
+    unique_parameter_values = np.unique([ep.get(condition) for ep in ImagingData.getEpochParameters()])
+    for p_ind, param_value in enumerate(unique_parameter_values):
+        if p_ind == para_ind:
+            query = {condition: param_value}
+            trials = filterTrials(roi_response, ImagingData, query)
+    return trials[eg_ind, :, :]
 
 def plotRoiResponses(ImagingData, roi_name):
     roi_data = ImagingData.getRoiResponses(roi_name)
 
     fh, ax = plt.subplots(1, int(roi_data.get('epoch_response').shape[0]+1), figsize=(6, 2))
     [x.set_axis_off() for x in ax]
-    [x.set_ylim([-0.25, 1]) for x in ax]
+    [x.set_ylim([-0.25, 0.4]) for x in ax]
 
     for r_ind in range(roi_data.get('epoch_response').shape[0]):
         time_vector = roi_data.get('time_vector')
@@ -73,7 +87,7 @@ def plotRoiResponses(ImagingData, roi_name):
         ax[r_ind].set_title(int(r_ind))
 
         if r_ind == 0: # scale bar
-            plot_tools.addScaleBars(ax[r_ind], 1, 1, F_value = -0.1, T_value = -0.2)
+            plot_tools.addScaleBars(ax[r_ind], 1, 0.1, F_value = -0.1, T_value = -0.2)
 
 
 def filterDataFiles(data_directory, target_fly_metadata={}, target_series_metadata={}, target_roi_series=[]):

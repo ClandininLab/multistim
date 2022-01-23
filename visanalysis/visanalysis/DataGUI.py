@@ -48,6 +48,7 @@ class DataGUI(QWidget):
         self.image_series_name = ''
         self.series_number = None
         self.roi_response = []
+        self.bg = []
         self.roi_mask = []
         self.roi_path = []
         self.roi_image = None
@@ -180,6 +181,11 @@ class DataGUI(QWidget):
         self.RoiTypeComboBox.activated.connect(self.selectRoiType)
         self.roi_control_grid.addWidget(self.RoiTypeComboBox, 0, 0)
 
+        # Background ROIs button
+        self.bgROIsButton = QPushButton("Make Background", self)
+        self.bgROIsButton.clicked.connect(self.selectBg)
+        self.roi_control_grid.addWidget(self.bgROIsButton, 0, 1)
+
         # Clear all ROIs button
         self.clearROIsButton = QPushButton("Clear ROIs", self)
         self.clearROIsButton.clicked.connect(self.clearRois)
@@ -193,6 +199,7 @@ class DataGUI(QWidget):
         self.RoiResponseTypeComboBox.addItem("TrialResponses")
         self.RoiResponseTypeComboBox.addItem("TrialAverageDFF")
         self.roi_control_grid.addWidget(self.RoiResponseTypeComboBox, 2, 2)
+        self.RoiResponseTypeComboBox.currentIndexChanged.connect(self.redrawRoiTraces)
 
         # ROIset file name line edit box
         self.defaultRoiSetName = "roi_set_name"
@@ -210,6 +217,8 @@ class DataGUI(QWidget):
         self.loadROIsComboBox.activated.connect(self.selectedExistingRoiSet)
         self.roi_control_grid.addWidget(self.loadROIsComboBox, 1, 2)
         self.updateExistingRoiSetList()
+        self.loadROIsComboBox.currentIndexChanged.connect(self.redrawRoiTraces)
+
 
         # Delete current roi button
         self.deleteROIButton = QPushButton("Delete ROI", self)
@@ -223,6 +232,12 @@ class DataGUI(QWidget):
         self.roiSlider.valueChanged.connect(self.sliderUpdated)
         self.roi_control_grid.addWidget(self.roiSlider, 2, 1, 1, 1)
 
+        # Epoch parameter dropdown selector
+        self.EpochParaTypeComboBox = QComboBox(self)
+        self.EpochParaTypeComboBox.addItem("(load epoch parameters)")
+        self.roi_control_grid.addWidget(self.EpochParaTypeComboBox, 3, 2)
+        self.EpochParaTypeComboBox.currentIndexChanged.connect(self.redrawRoiTraces)
+
         plt.rc_context({'axes.edgecolor': 'white',
                         'xtick.color': 'white',
                         'ytick.color': 'white',
@@ -230,7 +245,7 @@ class DataGUI(QWidget):
                         'axes.facecolor': 'black'})
         self.responseFig = plt.figure()
         self.responsePlot = self.responseFig.add_subplot(111)
-        self.responseFig.subplots_adjust(left=0.05, bottom=0.20, top=0.95, right=0.98)
+        self.responseFig.subplots_adjust(left=0.1, bottom=0.20, top=0.95, right=0.98)
         self.responseCanvas = FigureCanvas(self.responseFig)
         self.responseCanvas.draw_idle()
         self.plot_grid.addWidget(self.responseCanvas, 0, 0)
@@ -259,7 +274,7 @@ class DataGUI(QWidget):
         self.roi_fig.tight_layout()
 
         self.setWindowTitle('Visanalysis')
-        self.setGeometry(200, 200, 1200, 600)
+        self.setGeometry(200, 200, 1200, 700)
         self.show()
 
     def _populateTree(self, widget, dict):
@@ -315,6 +330,7 @@ class DataGUI(QWidget):
 
                 self.image_file_name = image_file_name
                 self.currentImageFileNameLabel.setText(self.image_file_name)
+                self.updateEpochParaType()
 
         if item.parent() is not None:
             if item.parent().text(column) == 'rois': # selected existing roi group
@@ -362,6 +378,14 @@ class DataGUI(QWidget):
             for r_path in self.existing_roi_set_paths:
                 self.loadROIsComboBox.addItem(r_path)
 
+            self.show()
+
+    def updateEpochParaType(self):
+        if self.plugin.ImagingDataObject is not None:
+            epoch_paras = self.plugin.ImagingDataObject.getEpochParameters()[0].keys()
+            self.EpochParaTypeComboBox.clear()
+            for ep in epoch_paras:
+                self.EpochParaTypeComboBox.addItem(ep)
             self.show()
 
     def selectedExistingRoiSet(self):
@@ -617,14 +641,25 @@ class DataGUI(QWidget):
         self.responsePlot.clear()
         if self.current_roi_index < len(self.roi_response):
             current_raw_trace = np.squeeze(self.roi_response[self.current_roi_index])
+            if len(self.bg) > 0:
+                current_raw_trace = current_raw_trace - self.bg
             fxn_name = self.RoiResponseTypeComboBox.currentText()
-            display_trace = getattr(self.plugin, 'getRoiResponse_{}'.format(fxn_name))([current_raw_trace])
-            self.responsePlot.plot(display_trace, color=self.colors[self.current_roi_index], linewidth=1, alpha=0.5)
+            epoch_para = self.EpochParaTypeComboBox.currentText()
+            display_trace = getattr(self.plugin, 'getRoiResponse_{}'.format(fxn_name))([current_raw_trace], epoch_para)
+            if len(display_trace) == 2:
+                self.responsePlot.plot(display_trace[0], display_trace[1], color=self.colors[self.current_roi_index],
+                                       linewidth=1, alpha=0.5)
+            else:
+                self.responsePlot.plot(display_trace, color=self.colors[self.current_roi_index], linewidth=1, alpha=0.5)
         self.responseCanvas.draw()
 
         self.refreshLassoWidget(keep_paths=False)
 
 # %% # # # # # # # # LOADING / SAVING / COMPUTING ROIS # # # # # # # # # # # # # # # # # # #
+
+    def selectBg(self):
+        self.bg = np.squeeze(self.roi_response[self.current_roi_index])
+        self.deleteRoi()
 
     def loadRois(self, roi_set_path):
         file_path = os.path.join(self.experiment_file_directory, self.experiment_file_name + '.hdf5')
@@ -677,6 +712,7 @@ class DataGUI(QWidget):
     def clearRois(self):
         self.roi_mask = []
         self.roi_response = []
+        self.bg = []
         self.roi_path = []
         self.roi_image = None
         self.responsePlot.clear()

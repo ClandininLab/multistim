@@ -8,13 +8,15 @@ https://github.com/ClandininLab/visanalysis
 mhturner@stanford.edu
 """
 
+import os
 import h5py
 import numpy as np
 import functools
+
 from visanalysis import plugin
-from visanalysis.analysis import imaging_data
+from visanalysis.analysis import imaging_data, shared_analysis
 from matplotlib import path
-import os
+
 
 
 class BasePlugin():
@@ -173,23 +175,31 @@ class BasePlugin():
         self.ImagingDataObject = imaging_data.ImagingDataObject(file_path, series_number, quiet=True)
 
     # roi display computation functions
-    def getRoiResponse_TrialAverage(self, roi_response):
+    def getRoiResponse_TrialAverage(self, roi_response, condition='color'):
         time_vector, response_matrix = self.ImagingDataObject.getEpochResponseMatrix(roi_response, dff=False)
-        trial_avg = np.mean(response_matrix, axis=(0, 1))
-        return trial_avg
+        trial_responses = shared_analysis.collectResponseByCondition(self.ImagingDataObject, response_matrix,
+                                                                     condition=condition, eg_ind=0)
+        trial_avg = np.mean(trial_responses, axis=0)
+        return time_vector, trial_avg
 
-    def getRoiResponse_TrialAverageDFF(self, roi_response):
+    def getRoiResponse_TrialAverageDFF(self, roi_response, condition='color'):
+        '''
+        TODO: modify the code here
+        '''
         time_vector, response_matrix = self.ImagingDataObject.getEpochResponseMatrix(roi_response, dff=True)
-        trial_avg = np.mean(response_matrix, axis=(0, 1))
-        return trial_avg
+        trial_responses = shared_analysis.collectResponseByCondition(self.ImagingDataObject, response_matrix,
+                                                                     condition=condition, eg_ind=0)
+        trial_avg = np.mean(trial_responses, axis=0)
+        return time_vector, trial_avg
 
-    def getRoiResponse_RawTrace(self, roi_response):
+    def getRoiResponse_RawTrace(self, roi_response, condition='color'):
         return roi_response[0]
 
-    def getRoiResponse_TrialResponses(self, roi_response):
+    def getRoiResponse_TrialResponses(self, roi_response, condition='color'):
         time_vector, response_matrix = self.ImagingDataObject.getEpochResponseMatrix(roi_response, dff=False)
-        TrialResponses = np.mean(response_matrix, axis=0).T
-        return TrialResponses
+        trial_responses = shared_analysis.collectResponseByCondition(self.ImagingDataObject, response_matrix,
+                                                                     condition=condition, eg_ind=0)
+        return time_vector, trial_responses.T
 
     def dataIsAttached(self, file_path, series_number):
         with h5py.File(file_path, 'r+') as experiment_file:

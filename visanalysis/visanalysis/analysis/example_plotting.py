@@ -4,17 +4,16 @@ import numpy as np
 import os
 
 
-experiment_file_directory = '/Users/mhturner/CurrentData'
-experiment_file_name = '2021-05-20'
-series_number = 2
+experiment_file_directory = '/Volumes/MyPassport/Bruker/'
+experiment_file_name = '2022-01-13'
+series_number = 18
 
 file_path = os.path.join(experiment_file_directory, experiment_file_name + '.hdf5')
 
 # ImagingDataObject wants a path to an hdf5 file and a series number from that file
 ID = imaging_data.ImagingDataObject(file_path,
                                     series_number,
-                                    quiet=True,
-                                    kwargs={'plot_trace_flag': False})
+                                    quiet=True)
 
 # %% PARAMETERS & METADATA
 
@@ -36,6 +35,12 @@ acquisition_metadata = ID.getAcquisitionMetadata()
 
 # Get list of rois present in the hdf5 file for this series
 roi_set_names = ID.getRoiSetNames()
+
+roi_name = 'trial18_ROI1'
+roi_data = ID.getRoiResponses(roi_name, background_subtraction=True)
+
+# test
+shared_analysis.plotResponseByCondition(ID, roi_name='ROI1', condition='color', eg_ind=0)
 
 # getRoiResponses() wants a ROI set name, returns roi_data (dict)
 roi_data = ID.getRoiResponses('LC12')

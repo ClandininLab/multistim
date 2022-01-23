@@ -9,6 +9,7 @@ mhturner@stanford.edu
 import functools
 import os
 import h5py
+import numpy
 import numpy as np
 import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
@@ -299,7 +300,8 @@ class ImagingDataObject():
                 bg_roi_group = roi_parent_group['bg']
                 bg_roi_response = list(bg_roi_group.get("roi_response")[:])
 
-            roi_data['roi_response'] = roi_data['roi_response'] - bg_roi_response
+            roi_data['roi_response'] = np.asarray(roi_data['roi_response']) - np.asarray(bg_roi_response)
+            roi_data['roi_response'] = list(roi_data['roi_response'])
 
         time_vector, response_matrix = self.getEpochResponseMatrix(roi_data.get('roi_response'))
 
