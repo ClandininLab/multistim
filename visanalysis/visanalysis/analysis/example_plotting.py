@@ -4,9 +4,9 @@ import numpy as np
 import os
 
 
-experiment_file_directory = '/Volumes/MyPassport/Bruker/'
-experiment_file_name = '2022-01-13'
-series_number = 18
+experiment_file_directory = '/Volumes/CLab/voltage_imaging/'
+experiment_file_name = '2022-01-27'
+series_number = 3
 
 file_path = os.path.join(experiment_file_directory, experiment_file_name + '.hdf5')
 
@@ -36,7 +36,7 @@ acquisition_metadata = ID.getAcquisitionMetadata()
 # Get list of rois present in the hdf5 file for this series
 roi_set_names = ID.getRoiSetNames()
 
-roi_name = 'trial18_ROI1'
+roi_name = 'cell4'
 roi_data = ID.getRoiResponses(roi_name, background_subtraction=True)
 
 # test

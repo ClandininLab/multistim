@@ -150,6 +150,7 @@ class ImagingDataObject():
 
         """
         frame_monitor_channels, time_vector, sample_rate = self.getPhotodiodeData()
+        frame_monitor_channels[frame_monitor_channels < 0] = 0  # This is to cut the initial ramping of the diode
         run_parameters = self.getRunParameters()
         epoch_parameters = self.getEpochParameters()
 
@@ -289,16 +290,16 @@ class ImagingDataObject():
             find_partial = functools.partial(find_series, series_number=self.series_number)
             roi_parent_group = experiment_file.visititems(find_partial)['rois']
             roi_set_group = roi_parent_group[roi_set_name]
-            roi_data['roi_response'] = list(roi_set_group.get("roi_response")[:])
-            roi_data['roi_mask'] = list(roi_set_group.get("roi_mask")[:])
-            roi_data['roi_image'] = roi_set_group.get("roi_image")[:]
+            roi_data['roi_response'] = list(roi_set_group.get("roi_response")[-1])
+            roi_data['roi_mask'] = list(roi_set_group.get("roi_mask")[-1])
+            roi_data['roi_image'] = roi_set_group.get("roi_image")[-1]
 
         if background_subtraction:
             with h5py.File(self.file_path, 'r') as experiment_file:
                 find_partial = functools.partial(find_series, series_number=self.series_number)
                 roi_parent_group = experiment_file.visititems(find_partial)['rois']
                 bg_roi_group = roi_parent_group['bg']
-                bg_roi_response = list(bg_roi_group.get("roi_response")[:])
+                bg_roi_response = list(bg_roi_group.get("roi_response")[-1])
 
             roi_data['roi_response'] = np.asarray(roi_data['roi_response']) - np.asarray(bg_roi_response)
             roi_data['roi_response'] = list(roi_data['roi_response'])
@@ -309,6 +310,15 @@ class ImagingDataObject():
         roi_data['time_vector'] = time_vector
 
         return roi_data
+
+    def resample_response(self, time_vector, response_list, resample_to=120):
+        num_samples = int((time_vector[-1]-time_vector[0])*resample_to)
+        new_time_vector = np.linspace(time_vector[0], time_vector[-1], num_samples)
+        new_response_list = []
+        for response in response_list:
+            new_response = np.interp(new_time_vector, time_vector, response)
+            new_response_list.append(new_response)
+        return new_time_vector, new_response_list
 
     def getEpochResponseMatrix(self, roi_response, dff=True):
         """
@@ -323,11 +333,17 @@ class ImagingDataObject():
                 response_matrix (ndarray): response for each roi in each epoch.
                     shape = (rois, epochs, frames per epoch)
         """
-        roi_response = np.vstack(roi_response)
-
         run_parameters = self.getRunParameters()
         response_timing = self.getResponseTiming()
         stimulus_timing = self.getStimulusTiming()
+
+        assert isinstance(roi_response, list)
+        sample_rate = int(1 / response_timing['sample_period'])
+        if sample_rate < 120:
+            response_timing['time_vector'], roi_response = self.resample_response(response_timing['time_vector'],
+                                                                                  roi_response)
+            response_timing['sample_period'] = 1/120
+        roi_response = np.vstack(roi_response)
 
         epoch_start_times = stimulus_timing['stimulus_start_times'] - run_parameters['pre_time']
         epoch_end_times = stimulus_timing['stimulus_end_times'] + run_parameters['tail_time']
@@ -368,7 +384,7 @@ class ImagingDataObject():
                 # calculate baseline using pre frames
                 baseline = np.mean(new_resp_chunk[:, 0:pre_frames], axis=1, keepdims=True)
                 # to dF/F
-                new_resp_chunk = (new_resp_chunk - baseline) / baseline
+                new_resp_chunk = (new_resp_chunk - baseline) / (baseline+0.001)
 
             try:
                 response_matrix[:, idx, :] = new_resp_chunk[:, 0:epoch_frames]
