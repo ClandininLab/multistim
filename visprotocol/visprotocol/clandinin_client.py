@@ -6,6 +6,7 @@ from flyrpc.transceiver import MySocketClient
 from flystim.screen import Screen
 from math import pi
 from flystim.draw import draw_screens
+from visprotocol.device import niusb
 
 
 class Client():
@@ -13,18 +14,21 @@ class Client():
         self.user_name = cfg.get('user_name')
         self.rig_name = cfg.get('rig_name')
         self.cfg = cfg
+        self.niusb_device = None
         # # # load rig-specific server/client options # #
         if socket.gethostname() == 'DESKTOP-4Q3O7LU':  # AODscope Karthala
             self.server_options = {'host': '171.65.17.126',
                                    'port': 60629,
                                    'use_server': True}
             self.NI_USB_name = 'NI USB-6001'
+            self.niusb_device = niusb.NIUSB6001(dev='Dev1', trigger_channel='port2/line0')
             self.send_ttl = True
         elif socket.gethostname() == 'USERBRU-I10P5LO':  # Bruker
             self.server_options = {'host': '171.65.17.246',
                                    'port': 60629,
                                    'use_server': True}
             self.NI_USB_name = 'NI USB-6210'
+            self.niusb_device = niusb.NIUSB6210(dev='Dev5', trigger_channel='ctr0')
             self.send_ttl = True
         else:
             self.server_options = {'host': '0.0.0.0',
@@ -51,6 +55,7 @@ class Client_Stim_Regeneration():
         self.user_name = cfg.get('user_name')
         self.rig_name = cfg.get('rig_name')
         self.cfg = cfg
+        self.niusb_device = None
 
         self.server_options = {'host': '0.0.0.0',
                                'port': 60629,

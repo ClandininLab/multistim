@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
+from time import sleep
 import os
 
 from visprotocol.protocol import clandinin_protocol
@@ -552,3 +553,57 @@ class PanGlomSuite(BaseProtocol):
                                'stim_time': 3.0,
                                'tail_time': 1.5,
                                'idle_color': 0.5}
+
+
+"""
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# # # # # # OPTO STIMS # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+"""
+
+
+class OptoStimulus(BaseProtocol):
+    def __init__(self, cfg):
+        super().__init__(cfg)
+        self.cfg = cfg
+
+        self.getRunParameterDefaults()
+        self.getParameterDefaults()
+
+
+    def getEpochParameters(self):
+
+        assert self.protocol_parameters['opto_mode'] in ['on', 'off', 'alternating']
+
+        if self.protocol_parameters['opto_mode'] == 'on':
+            self.convenience_parameters['opto_stim'] = True
+
+        elif self.protocol_parameters['opto_mode'] == 'off':
+            self.convenience_parameters['opto_stim'] = False
+
+        else:
+            print('Unrecognized opto_mode string. Allowable: [on, off, alternating]')
+
+
+    def startStimuli(self, client, append_stim_frames=False, print_profile=True):
+        if self.convenience_parameters['opto_stim']:
+            client.niusb_device.outputStep(output_channel='ctr1',
+                                           low_time=0.001,
+                                           high_time=self.protocol_parameters['opto_time'],
+                                           initial_delay=0.0)
+            sleep(self.run_parameters['pre_time']-self.protocol_parameters['opto_time'])
+        else:
+            sleep(self.run_parameters['pre_time'])
+
+
+    def getParameterDefaults(self):
+        self.protocol_parameters = {'opto_mode': 'on',  # 'on', 'off', 'alternating'
+                                    'opto_time': 2.0}
+
+    def getRunParameterDefaults(self):
+        self.run_parameters = {'protocol_ID': 'MedullaTuningSuite',
+                               'num_epochs': 1,  # 96 = 16 stims * 2 opto conditions * 3 averages each
+                               'pre_time': 1200.0,
+                               'stim_time': 1.0,
+                               'tail_time': 1200.0,
+                               'idle_color': 0.0}
