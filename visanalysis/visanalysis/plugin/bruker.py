@@ -58,7 +58,7 @@ class BrukerPlugin(plugin.base.BasePlugin):
         """
         mask = self.getRoiMaskFromPath(roi_path)
 
-        roi_response = np.mean(self.current_series[mask, :], axis=0, keepdims=True) - np.min(self.current_series)
+        roi_response = np.mean(self.current_series[mask, :], axis=0, keepdims=True) # - np.min(self.current_series)  What is this!!!!
 
         return roi_response
 

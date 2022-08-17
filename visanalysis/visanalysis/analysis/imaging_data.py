@@ -304,10 +304,11 @@ class ImagingDataObject():
             roi_data['roi_response'] = np.asarray(roi_data['roi_response']) - np.asarray(bg_roi_response)
             roi_data['roi_response'] = list(roi_data['roi_response'])
 
-        time_vector, response_matrix = self.getEpochResponseMatrix(roi_data.get('roi_response'))
+        time_vector, response_matrix, cut_inds = self.getEpochResponseMatrix(roi_data.get('roi_response'), return_cut_ind=True)
 
         roi_data['epoch_response'] = response_matrix
         roi_data['time_vector'] = time_vector
+        roi_data['cutting_inds'] = cut_inds
 
         return roi_data
 
@@ -320,7 +321,7 @@ class ImagingDataObject():
             new_response_list.append(new_response)
         return new_time_vector, new_response_list
 
-    def getEpochResponseMatrix(self, roi_response, dff=True):
+    def getEpochResponseMatrix(self, roi_response, dff=True, return_cut_ind=False):
         """
         getEpochReponseMatrix(self, roi_response, dff=True)
             Takes in long stack response traces and splits them up into each stimulus epoch
@@ -349,7 +350,7 @@ class ImagingDataObject():
         epoch_end_times = stimulus_timing['stimulus_end_times'] + run_parameters['tail_time']
         # Use measured stimulus lengths for stim time instead of epoch param
         # cut off a bit of the end of each epoch to allow for slop in how many frames were acquired
-        epoch_time = 0.97*(run_parameters['pre_time'] +
+        epoch_time = 0.95*(run_parameters['pre_time'] +
                            run_parameters['stim_time'] +
                            run_parameters['tail_time']) # sec
 
@@ -395,7 +396,10 @@ class ImagingDataObject():
         if len(cut_inds) > 0:
             print('Warning: cut {} epochs from epoch response matrix'.format(len(cut_inds)))
         response_matrix = np.delete(response_matrix, cut_inds, axis=1)
-        return time_vector, response_matrix
+        if return_cut_ind:
+            return time_vector, response_matrix, cut_inds
+        else:
+            return time_vector, response_matrix
 
     def generateRoiMap(self, roi_name, scale_bar_length=0, z=0):
         """
