@@ -88,8 +88,8 @@ class Trajectory:
                 return angular_size / 2
 
             def get_reverse_loom_size(t):
-                d0 = kwargs['rv_ratio'] / np.tan(np.deg2rad(kwargs['end_size']/2))
-                angular_size = 2 * np.rad2deg(np.arctan(kwargs['rv_ratio'] * (1 / (d0 + t))))
+                d0 = -kwargs['rv_ratio'] / np.tan(np.deg2rad(kwargs['end_size']/2))
+                angular_size = 2 * np.rad2deg(np.arctan(-kwargs['rv_ratio'] * (1 / (d0 + t))))
                 return angular_size / 2
 
             if kwargs['rv_ratio'] > 0:
