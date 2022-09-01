@@ -372,6 +372,60 @@ class LoomingSpot(BaseProtocol):
                                'idle_color': 0.5}
 
 
+class GridLoomingSpot(BaseProtocol):
+    def __init__(self, cfg):
+        super().__init__(cfg)
+
+        self.getRunParameterDefaults()
+        self.getParameterDefaults()
+
+    def getEpochParameters(self):
+        stim_time = self.run_parameters['stim_time']
+        start_size = self.protocol_parameters['start_size']
+        end_size = self.protocol_parameters['end_size']
+
+        # adjust center to screen center
+        theta = self.protocol_parameters['theta']
+        phi = self.protocol_parameters['phi']
+        current_center = self.selectParametersFromLists((theta, phi), all_combinations=True, randomize_order=self.protocol_parameters['randomize_order'])
+        adj_center = self.adjustCenter(current_center)
+
+        rv_ratio = self.protocol_parameters['rv_ratio'] / 1e3  # msec -> sec
+
+        r_traj = {'name': 'Loom',
+                  'rv_ratio': rv_ratio,
+                  'stim_time': stim_time,
+                  'start_size': start_size,
+                  'end_size': end_size}
+
+        self.epoch_parameters = {'name': 'MovingSpot',
+                                 'radius': r_traj,
+                                 'sphere_radius': 1,
+                                 'color': self.protocol_parameters['intensity'],
+                                 'theta': adj_center[0],
+                                 'phi': adj_center[1]}
+
+        self.convenience_parameters = {'current_phi': current_center[0],
+                                       'current_theta': current_center[1]}
+
+    def getParameterDefaults(self):
+        self.protocol_parameters = {'intensity': 0.0,
+                                    'theta': [0.0],
+                                    'phi': [0.0],
+                                    'start_size': 2.5,
+                                    'end_size': 80.0,
+                                    'rv_ratio': 25,
+                                    'randomize_order': True}
+
+    def getRunParameterDefaults(self):
+        self.run_parameters = {'protocol_ID': 'LoomingSpot',
+                               'num_epochs': 75,
+                               'pre_time': 0.5,
+                               'stim_time': 1.0,
+                               'tail_time': 1.0,
+                               'idle_color': 0.5}
+
+
 class MovingRectangle(BaseProtocol):
     def __init__(self, cfg):
         super().__init__(cfg)

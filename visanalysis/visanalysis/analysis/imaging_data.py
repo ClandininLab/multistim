@@ -291,8 +291,8 @@ class ImagingDataObject():
             roi_parent_group = experiment_file.visititems(find_partial)['rois']
             roi_set_group = roi_parent_group[roi_set_name]
             roi_data['roi_response'] = list(roi_set_group.get("roi_response")[-1])
-            roi_data['roi_mask'] = list(roi_set_group.get("roi_mask")[-1])
-            roi_data['roi_image'] = roi_set_group.get("roi_image")[-1]
+            roi_data['roi_mask'] = roi_set_group.get("roi_mask")[:]
+            roi_data['roi_image'] = roi_set_group.get("roi_image")[:]
 
         if background_subtraction:
             with h5py.File(self.file_path, 'r') as experiment_file:
@@ -404,7 +404,6 @@ class ImagingDataObject():
     def generateRoiMap(self, roi_name, scale_bar_length=0, z=0):
         """
         Make roi map image in a new figure.
-
         Params:
             roi_name: str
             scale_bar_length: (microns)
