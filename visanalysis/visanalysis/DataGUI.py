@@ -325,7 +325,8 @@ class DataGUI(QWidget):
                     image_file_name = os.path.split(image_file_path)[-1]
                     self.data_directory = os.path.split(image_file_path)[:-1][0]
                     plugin.base.attachImageFileName(file_path, self.series_number, image_file_name)
-                    print('Attached image_file_name {} to series {}'.format(image_file_name, self.series_number))
+                    print('Attached'
+                          ' image_file_name {} to series {}'.format(image_file_name, self.series_number))
                     print('Data directory is {}'.format(self.data_directory))
 
                 self.image_file_name = image_file_name
