@@ -1,0 +1,18 @@
+moving_dot_test:
+  run_parameters:
+    protocol_ID: MovingSpot
+    num_epochs: 165.0
+    pre_time: 1.0
+    stim_time: 2.4
+    tail_time: 1.0
+    idle_color: 0.5
+  protocol_parameters:
+    center:
+    - 0.0
+    - 0.0
+    spot_radius: 5.0
+    spot_color: 0.0
+    spot_speed:
+    - 80.0
+    angle: 0.0
+    randomize_order: true

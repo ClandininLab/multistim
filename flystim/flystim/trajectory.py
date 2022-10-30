@@ -65,21 +65,6 @@ class Trajectory:
             """
             def get_loom_size(t):
                 # calculate angular size at t
-                """
-                angular_size = 2 * np.rad2deg(np.arctan(kwargs['rv_ratio'] * (1 / (kwargs['stim_time'] - t))))
-
-                # shift curve vertically so it starts at start_size. Calc t=0 size of trajector
-                min_size = 2 * np.rad2deg(np.arctan(kwargs['rv_ratio'] * (1 / (kwargs['stim_time'] - 0))))
-                size_adjust = min_size - kwargs['start_size']
-                angular_size = angular_size - size_adjust
-
-                # Cap the curve at end_size and have it just hang there
-                if (angular_size > kwargs['end_size']):
-                    angular_size = kwargs['end_size']
-
-                # divide by  2 to get spot radius
-                return angular_size / 2
-                """
                 d0 = kwargs['rv_ratio'] / np.tan(np.deg2rad(kwargs['start_size'] / 2))
                 angular_size = 2 * np.rad2deg(np.arctan(kwargs['rv_ratio'] * (1 / (d0 - t))))
                 # Cap the curve at end_size and have it just hang there

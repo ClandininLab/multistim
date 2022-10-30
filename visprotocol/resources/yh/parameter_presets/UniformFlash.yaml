@@ -1,0 +1,121 @@
+flash_test:
+  run_parameters:
+    protocol_ID: UniformFlash
+    num_epochs: 1000.0
+    pre_time: 0.5
+    stim_time: 0.3
+    tail_time: 0.5
+    idle_color: 0.1
+  protocol_parameters:
+    height: 120.0
+    width: 120.0
+    center:
+    - 0.0
+    - 0.0
+    intensity:
+    - 0.2
+    - 0.0
+    randomize_order: true
+impulse:
+  run_parameters:
+    protocol_ID: UniformFlash
+    num_epochs: 1000.0
+    pre_time: 0.2
+    stim_time: 0.03
+    tail_time: 0.3
+    idle_color: 0.1
+  protocol_parameters:
+    height: 120.0
+    width: 120.0
+    center:
+    - 0.0
+    - 0.0
+    intensity:
+    - 0.2
+    - 0.0
+    randomize_order: true
+lawf2_test:
+  run_parameters:
+    protocol_ID: UniformFlash
+    num_epochs: 1000.0
+    pre_time: 0.5
+    stim_time: 1.0
+    tail_time: 0.5
+    idle_color: 0.0
+  protocol_parameters:
+    height: 120.0
+    width: 120.0
+    center:
+    - 0.0
+    - 0.0
+    intensity:
+    - 0.2
+    randomize_order: true
+lawf2_jRG:
+  run_parameters:
+    protocol_ID: UniformFlash
+    num_epochs: 20.0
+    pre_time: 0.5
+    stim_time: 1.0
+    tail_time: 0.5
+    idle_color: 0.0
+  protocol_parameters:
+    height: 120.0
+    width: 120.0
+    center:
+    - 0.0
+    - 0.0
+    intensity:
+    - 0.2
+    randomize_order: true
+lawf2_ASAP:
+  run_parameters:
+    protocol_ID: UniformFlash
+    num_epochs: 50.0
+    pre_time: 0.5
+    stim_time: 1.0
+    tail_time: 0.5
+    idle_color: 0.0
+  protocol_parameters:
+    height: 120.0
+    width: 120.0
+    center:
+    - 0.0
+    - 0.0
+    intensity:
+    - 0.2
+    randomize_order: true
+impulse_Tm3:
+  run_parameters:
+    protocol_ID: UniformFlash
+    num_epochs: 100.0
+    pre_time: 0.2
+    stim_time: 0.03
+    tail_time: 0.3
+    idle_color: 0.0
+  protocol_parameters:
+    height: 120.0
+    width: 120.0
+    center:
+    - 0.0
+    - 0.0
+    intensity:
+    - 0.2
+    randomize_order: true
+flash_Tm3:
+  run_parameters:
+    protocol_ID: UniformFlash
+    num_epochs: 1000.0
+    pre_time: 0.5
+    stim_time: 0.3
+    tail_time: 0.5
+    idle_color: 0.0
+  protocol_parameters:
+    height: 120.0
+    width: 120.0
+    center:
+    - 0.0
+    - 0.0
+    intensity:
+    - 0.2
+    randomize_order: true

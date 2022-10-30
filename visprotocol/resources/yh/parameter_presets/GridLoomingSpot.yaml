@@ -1,0 +1,110 @@
+left_screen_test:
+  run_parameters:
+    protocol_ID: GridLoomingSpot
+    num_epochs: 80.0
+    pre_time: 0.5
+    stim_time: 0.5
+    tail_time: 1.0
+    idle_color: 0.5
+  protocol_parameters:
+    intensity: 0.0
+    theta:
+    - 15.0
+    - 30.0
+    - 45.0
+    - 60.0
+    phi:
+    - -10.0
+    - -20.0
+    - 0.0
+    - 10.0
+    - 20.0
+    start_size: 5.0
+    end_size: 80.0
+    rv_ratio: 25.0
+    randomize_order: true
+right_screen_test:
+  run_parameters:
+    protocol_ID: GridLoomingSpot
+    num_epochs: 80.0
+    pre_time: 0.5
+    stim_time: 0.5
+    tail_time: 1.0
+    idle_color: 0.5
+  protocol_parameters:
+    intensity: 0.0
+    theta:
+    - -15.0
+    - -30.0
+    - -45.0
+    - -60.0
+    phi:
+    - -10.0
+    - -20.0
+    - 0.0
+    - 10.0
+    - 20.0
+    start_size: 5.0
+    end_size: 80.0
+    rv_ratio: 25.0
+    randomize_order: true
+left_screen_test2:
+  run_parameters:
+    protocol_ID: GridLoomingSpot
+    num_epochs: 96.0
+    pre_time: 0.5
+    stim_time: 0.5
+    tail_time: 1.0
+    idle_color: 0.5
+  protocol_parameters:
+    intensity: 0.0
+    theta:
+    - 10.0
+    - 20.0
+    - 30.0
+    - 40.0
+    - 50.0
+    - 60.0
+    - 70.0
+    - 80.0
+    phi:
+    - -10.0
+    - -20.0
+    - -30.0
+    - 0.0
+    - 10.0
+    - 20.0
+    start_size: 5.0
+    end_size: 30.0
+    rv_ratio: 25.0
+    randomize_order: true
+right_screen_test2:
+  run_parameters:
+    protocol_ID: GridLoomingSpot
+    num_epochs: 96.0
+    pre_time: 0.5
+    stim_time: 0.5
+    tail_time: 1.0
+    idle_color: 0.5
+  protocol_parameters:
+    intensity: 0.0
+    theta:
+    - -10.0
+    - -20.0
+    - -30.0
+    - -40.0
+    - -50.0
+    - -60.0
+    - -70.0
+    - -80.0
+    phi:
+    - -10.0
+    - -20.0
+    - -30.0
+    - 0.0
+    - 10.0
+    - 20.0
+    start_size: 5.0
+    end_size: 30.0
+    rv_ratio: 25.0
+    randomize_order: true

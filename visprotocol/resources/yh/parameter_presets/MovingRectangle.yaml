@@ -1,0 +1,129 @@
+moving_dark_bar_80:
+  run_parameters:
+    protocol_ID: MovingRectangle
+    num_epochs: 80.0
+    pre_time: 0.5
+    stim_time: 3.0
+    tail_time: 0.5
+    idle_color: 0.5
+  protocol_parameters:
+    width: 5.0
+    height: 50.0
+    intensity:
+    - 0.0
+    center:
+    - 0.0
+    - 0.0
+    speed: 80.0
+    angle:
+    - 0.0
+    - 180.0
+    randomize_order: true
+moving_dark_bar_20s:
+  run_parameters:
+    protocol_ID: MovingRectangle
+    num_epochs: 20.0
+    pre_time: 0.5
+    stim_time: 3.0
+    tail_time: 0.5
+    idle_color: 0.2
+  protocol_parameters:
+    width: 5.0
+    height: 150.0
+    intensity:
+    - 0.0
+    center:
+    - 0.0
+    - 0.0
+    speed: 80.0
+    angle:
+    - 0.0
+    - 90.0
+    - 270.0
+    - 180.0
+    randomize_order: true
+moving_dark_bar_test:
+  run_parameters:
+    protocol_ID: MovingRectangle
+    num_epochs: 40.0
+    pre_time: 0.5
+    stim_time: 2.0
+    tail_time: 0.5
+    idle_color: 0.2
+  protocol_parameters:
+    width: 10.0
+    height: 150.0
+    intensity:
+    - 0.0
+    center:
+    - 0.0
+    - 0.0
+    speed: 100.0
+    angle:
+    - 90.0
+    - 270.0
+    randomize_order: true
+backward_bar:
+  run_parameters:
+    protocol_ID: MovingRectangle
+    num_epochs: 40.0
+    pre_time: 0.5
+    stim_time: 0.5
+    tail_time: 1.0
+    idle_color: 0.25
+  protocol_parameters:
+    width: 10.0
+    height: 100.0
+    intensity:
+    - 0.0
+    center:
+    - -120.0
+    - 0.0
+    speed: 500.0
+    angle:
+    - 180.0
+    randomize_order: true
+moving_dark_LC4:
+  run_parameters:
+    protocol_ID: MovingRectangle
+    num_epochs: 20.0
+    pre_time: 0.5
+    stim_time: 1.0
+    tail_time: 0.5
+    idle_color: 0.25
+  protocol_parameters:
+    width: 15.0
+    height: 150.0
+    intensity:
+    - 0.0
+    center:
+    - 30.0
+    - 10.0
+    speed: 80.0
+    angle:
+    - 0.0
+    - 180.0
+    randomize_order: true
+moving_dark_LC4_2:
+  run_parameters:
+    protocol_ID: MovingRectangle
+    num_epochs: 40.0
+    pre_time: 0.5
+    stim_time: 1.0
+    tail_time: 0.5
+    idle_color: 0.25
+  protocol_parameters:
+    width: 15.0
+    height: 150.0
+    intensity:
+    - 0.0
+    center:
+    - 10.0
+    - -20.0
+    speed: 80.0
+    angle:
+    - 0.0
+    - 180.0
+    - 90.0
+    - 270.0
+    randomize_order: true

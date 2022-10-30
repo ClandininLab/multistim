@@ -1,0 +1,41 @@
+looming_test:
+  run_parameters:
+    protocol_ID: LoomingSpotContrast
+    num_epochs: 30.0
+    pre_time: 0.5
+    stim_time: 1.5
+    tail_time: 1.0
+    idle_color: 0.5
+  protocol_parameters:
+    intensity:
+    - 0.0
+    - 0.1
+    center:
+    - 45.0
+    - 20.0
+    start_size: 5.0
+    end_size: 120.0
+    rv_ratio:
+    - 40.0
+    randomize_order: true
+LC4_test:
+  run_parameters:
+    protocol_ID: LoomingSpotContrast
+    num_epochs: 32.0
+    pre_time: 0.5
+    stim_time: 1.0
+    tail_time: 1.5
+    idle_color: 0.5
+  protocol_parameters:
+    intensity:
+    - 0.01
+    - 0.1
+    - 0.2
+    - 1.0
+    center:
+    - 80.0
+    - -10.0
+    start_size: 5.0
+    end_size: 120.0
+    rv_ratio: 40.0
+    randomize_order: true

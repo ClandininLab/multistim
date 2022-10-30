@@ -20,6 +20,11 @@ rig_config:
     screen_center: [0, -30]
     rig: Bruker
 
+  Bruker_Screen_Speaker:
+    data_directory: E:/Alex/FlystimData
+    screen_center: [0, -30]
+    rig: Bruker
+
   Laptop:
     data_directory: C:/Users/ebond/Desktop/working/AOD_L2_imaging/FlystimData
     screen_center: [0, 0]

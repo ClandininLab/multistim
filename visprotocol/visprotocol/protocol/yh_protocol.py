@@ -405,8 +405,8 @@ class GridLoomingSpot(BaseProtocol):
                                  'theta': adj_center[0],
                                  'phi': adj_center[1]}
 
-        self.convenience_parameters = {'current_phi': current_center[0],
-                                       'current_theta': current_center[1]}
+        self.convenience_parameters = {'current_theta': current_center[0],
+                                       'current_phi': current_center[1]}
 
     def getParameterDefaults(self):
         self.protocol_parameters = {'intensity': 0.0,
@@ -418,7 +418,59 @@ class GridLoomingSpot(BaseProtocol):
                                     'randomize_order': True}
 
     def getRunParameterDefaults(self):
-        self.run_parameters = {'protocol_ID': 'LoomingSpot',
+        self.run_parameters = {'protocol_ID': 'GridLoomingSpot',
+                               'num_epochs': 75,
+                               'pre_time': 0.5,
+                               'stim_time': 1.0,
+                               'tail_time': 1.0,
+                               'idle_color': 0.5}
+
+
+class LoomingSpotContrast(BaseProtocol):
+    def __init__(self, cfg):
+        super().__init__(cfg)
+
+        self.getRunParameterDefaults()
+        self.getParameterDefaults()
+
+    def getEpochParameters(self):
+        stim_time = self.run_parameters['stim_time']
+        start_size = self.protocol_parameters['start_size']
+        end_size = self.protocol_parameters['end_size']
+
+        # adjust center to screen center
+        adj_center = self.adjustCenter(self.protocol_parameters['center'])
+
+        rv_ratio = self.protocol_parameters['rv_ratio']  # msec
+        intensity = self.protocol_parameters['intensity']
+        current_intensity = self.selectParametersFromLists(intensity, randomize_order=self.protocol_parameters['randomize_order'])
+
+        rv_ratio = rv_ratio / 1e3  # msec -> sec
+        r_traj = {'name': 'Loom',
+                  'rv_ratio': rv_ratio,
+                  'stim_time': stim_time,
+                  'start_size': start_size,
+                  'end_size': end_size}
+
+        self.epoch_parameters = {'name': 'MovingSpot',
+                                 'radius': r_traj,
+                                 'sphere_radius': 1,
+                                 'color': current_intensity,
+                                 'theta': adj_center[0],
+                                 'phi': adj_center[1]}
+
+        self.convenience_parameters = {'current_intensity': current_intensity}
+
+    def getParameterDefaults(self):
+        self.protocol_parameters = {'intensity': [0.0, 0.1],
+                                    'center': [0, 0],
+                                    'start_size': 2.5,
+                                    'end_size': 80.0,
+                                    'rv_ratio': 40.0,
+                                    'randomize_order': True}
+
+    def getRunParameterDefaults(self):
+        self.run_parameters = {'protocol_ID': 'LoomingSpotContrast',
                                'num_epochs': 75,
                                'pre_time': 0.5,
                                'stim_time': 1.0,
@@ -457,6 +509,71 @@ class MovingRectangle(BaseProtocol):
                                'stim_time': 3.0,
                                'tail_time': 1.0,
                                'idle_color': 0.5}
+
+
+class ExpandingRectangle(BaseProtocol):
+    def __init__(self, cfg):
+        super().__init__(cfg)
+
+        self.getRunParameterDefaults()
+        self.getParameterDefaults()
+
+    def getExpandingPatchParameters(self, center=None, angle=None, speed=None, width=None, height=None, color=None):
+        if center is None: center = self.adjustCenter(self.protocol_parameters['center'])
+        if angle is None: angle = self.protocol_parameters['angle']
+        if speed is None: speed = self.protocol_parameters['speed']
+        if width is None: width = self.protocol_parameters['width']
+        if height is None: height = self.protocol_parameters['height']
+        if color is None: color = self.protocol_parameters['color']
+
+        centerX = center[0]
+        centerY = center[1]
+        stim_time = self.run_parameters['stim_time']
+        distance_to_travel = speed * stim_time
+        # trajectory just has two points, at time=0 and time=stim_time
+        startW = (0, width)
+        endW = (stim_time, width+2*stim_time*speed)
+
+        w = [startW, endW]
+
+
+        width_traj = {'name': 'tv_pairs',
+                        'tv_pairs': w,
+                        'kind': 'linear'}
+
+        patch_parameters = {'name': 'MovingPatch',
+                            'width': width_traj,
+                            'height': height,
+                            'color': color,
+                            'theta': centerX,
+                            'phi': centerY,
+                            'angle': angle}
+        return patch_parameters
+
+    def getEpochParameters(self):
+        current_speed = self.selectParametersFromLists(self.protocol_parameters['speed'], randomize_order=self.protocol_parameters['randomize_order'])
+
+        self.epoch_parameters = self.getExpandingPatchParameters(speed=current_speed)
+
+        self.convenience_parameters = {'current_speed': current_speed}
+
+    def getParameterDefaults(self):
+        self.protocol_parameters = {'width': 10.0,
+                                    'height': 50.0,
+                                    'color': 0,
+                                    'center': [-120, 0],
+                                    'speed': 500.0,
+                                    'angle': 0,
+                                    'randomize_order': True}
+
+    def getRunParameterDefaults(self):
+        self.run_parameters = {'protocol_ID': 'ExpandingRectangle',
+                               'num_epochs': 40,
+                               'pre_time': 0.5,
+                               'stim_time': 0.5,
+                               'tail_time': 1.0,
+                               'idle_color': 0.5}
+
 
 
 class UniformFlash(BaseProtocol):

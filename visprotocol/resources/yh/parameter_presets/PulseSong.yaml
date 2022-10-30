@@ -1,0 +1,15 @@
+audio_test:
+  run_parameters:
+    protocol_ID: PulseSong
+    num_epochs: 100.0
+    pre_time: 1.0
+    stim_time: 2.0
+    tail_time: 3.0
+    idle_color: 0.0
+  protocol_parameters:
+    volume: 1.0
+    frequency:
+    - 225.0
+    randomize_order: false
+    pcycle: 0.016
+    ncycle: 0.02
