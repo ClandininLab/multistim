@@ -592,7 +592,8 @@ class ExpandingRectangle(BaseProtocol):
         distance_to_travel = speed * stim_time
         # trajectory just has two points, at time=0 and time=stim_time
         startW = (0, width)
-        endW = (stim_time, width+2*stim_time*speed)
+        # endW = (stim_time, width+2*stim_time*speed)
+        endW = (stim_time, width + stim_time * speed)
 
         w = [startW, endW]
         width_traj = {'name': 'tv_pairs',
@@ -608,19 +609,21 @@ class ExpandingRectangle(BaseProtocol):
         return patch_parameters
 
     def getEpochParameters(self):
-        current_speed = self.selectParametersFromLists(self.protocol_parameters['speed'], randomize_order=self.protocol_parameters['randomize_order'])
+        current_angle, current_speed = self.selectParametersFromLists((self.protocol_parameters['angle'], self.protocol_parameters['speed']),
+                                                              randomize_order=self.protocol_parameters['randomize_order'])
 
-        self.epoch_parameters = self.getExpandingPatchParameters(speed=current_speed)
+        self.epoch_parameters = self.getExpandingPatchParameters(speed=current_speed, angle=current_angle)
 
-        self.convenience_parameters = {'current_speed': current_speed}
+        self.convenience_parameters = {'current_angle': current_angle,
+                                       'current_speed': current_speed}
 
     def getParameterDefaults(self):
-        self.protocol_parameters = {'width': 10.0,
-                                    'height': 50.0,
+        self.protocol_parameters = {'width': 0.0,
+                                    'height': 8.0,
                                     'color': 0,
-                                    'center': [-120, 0],
-                                    'speed': 500.0,
-                                    'angle': 0,
+                                    'center': [0, 0],
+                                    'speed': 100.0,
+                                    'angle': [0, 90],
                                     'randomize_order': True}
 
     def getRunParameterDefaults(self):
