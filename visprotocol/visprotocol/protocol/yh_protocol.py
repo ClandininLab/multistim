@@ -4,7 +4,7 @@
 import numpy as np
 from time import sleep
 import os
-
+import flyrpc.multicall
 from visprotocol.protocol import clandinin_protocol
 
 
@@ -132,6 +132,66 @@ class BaseProtocol(clandinin_protocol.BaseProtocol):
                            'phi': y_trajectory}
         return spot_parameters
 
+
+    def getMovingRingParameters(self, center=None, angle=None, speed=None, inner_radius=None, thickness=None, color=None, distance_to_travel=None):
+        if center is None: center = self.protocol_parameters['center']
+        if angle is None: angle = self.protocol_parameters['angle']
+        if speed is None: speed = self.protocol_parameters['speed']
+        if inner_radius is None: radius = self.protocol_parameters['inner_radius']
+        if thickness is None: radius = self.protocol_parameters['thickness']
+        if color is None: color = self.protocol_parameters['color']
+
+        center = self.adjustCenter(center)
+
+        centerX = center[0]
+        centerY = center[1]
+        stim_time = self.run_parameters['stim_time']
+        if distance_to_travel is None:  # distance_to_travel is set by speed and stim_time
+            distance_to_travel = speed * stim_time
+            # trajectory just has two points, at time=0 and time=stim_time
+            startX = (0, centerX - np.cos(np.radians(angle)) * distance_to_travel/2)
+            endX = (stim_time, centerX + np.cos(np.radians(angle)) * distance_to_travel/2)
+            startY = (0, centerY - np.sin(np.radians(angle)) * distance_to_travel/2)
+            endY = (stim_time, centerY + np.sin(np.radians(angle)) * distance_to_travel/2)
+            x = [startX, endX]
+            y = [startY, endY]
+
+        else:  # distance_to_travel is specified, so only go that distance at the defined speed. Hang pre- and post- for any extra stim time
+            travel_time = distance_to_travel / speed
+            if travel_time > stim_time:
+                print('Warning: stim_time is too short to show whole trajectory at this speed!')
+                hang_time = 0
+            else:
+                hang_time = (stim_time - travel_time)/2
+
+            # split up hang time in pre and post such that trajectory always hits centerX,centerY at stim_time/2
+            x_1 = (0, centerX - np.cos(np.radians(angle)) * distance_to_travel/2)
+            x_2 = (hang_time, centerX - np.cos(np.radians(angle)) * distance_to_travel/2)
+            x_3 = (hang_time+travel_time, centerX + np.cos(np.radians(angle)) * distance_to_travel/2)
+            x_4 = (hang_time+travel_time+hang_time, centerX + np.cos(np.radians(angle)) * distance_to_travel/2)
+
+            y_1 = (0, centerY - np.sin(np.radians(angle)) * distance_to_travel/2)
+            y_2 = (hang_time, centerY - np.sin(np.radians(angle)) * distance_to_travel/2)
+            y_3 = (hang_time+travel_time, centerY + np.sin(np.radians(angle)) * distance_to_travel/2)
+            y_4 = (hang_time+travel_time+hang_time, centerY + np.sin(np.radians(angle)) * distance_to_travel/2)
+
+            x = [x_1, x_2, x_3, x_4]
+            y = [y_1, y_2, y_3, y_4]
+
+        x_trajectory = {'name': 'tv_pairs',
+                        'tv_pairs': x,
+                        'kind': 'linear'}
+        y_trajectory = {'name': 'tv_pairs',
+                        'tv_pairs': y,
+                        'kind': 'linear'}
+
+        ring_parameters = {'name': 'MovingRing',
+                           'inner_radius': inner_radius,
+                           'thickness': thickness,
+                           'color': color,
+                           'theta': x_trajectory,
+                           'phi': y_trajectory}
+        return ring_parameters
 
 
 
@@ -574,6 +634,142 @@ class ExpandingRectangle(BaseProtocol):
                                'tail_time': 1.0,
                                'idle_color': 0.5}
 
+
+class SurroundInhibition(BaseProtocol):
+    def __init__(self, cfg):
+        super().__init__(cfg)
+
+        self.getRunParameterDefaults()
+        self.getParameterDefaults()
+
+    def getEpochParameters(self):
+        thickness = self.protocol_parameters['thickness']
+        current_thickness = self.selectParametersFromLists(thickness,
+                                                          randomize_order=self.protocol_parameters['randomize_order'])
+        diameter = self.protocol_parameters['rf_diameter']
+        center = self.protocol_parameters['center']
+        ring_parameters = self.getMovingRingParameters(color=self.protocol_parameters['intensity'],
+                                                       inner_radius=diameter/2,
+                                                       thickness=current_thickness,
+                                                       center=center,
+                                                       speed=0,
+                                                       angle=0)
+
+        stim_time = self.run_parameters['stim_time']
+        start_size = self.protocol_parameters['start_size']
+        end_size = self.protocol_parameters['end_size']
+
+        # adjust center to screen center
+        adj_center = self.adjustCenter(self.protocol_parameters['center'])
+
+        rv_ratio = self.protocol_parameters['rv_ratio']  # msec
+
+        rv_ratio = rv_ratio / 1e3  # msec -> sec
+        r_traj = {'name': 'Loom',
+                  'rv_ratio': rv_ratio,
+                  'stim_time': stim_time,
+                  'start_size': start_size,
+                  'end_size': end_size}
+
+        spot_parameters = {'name': 'MovingSpot',
+                             'radius': r_traj,
+                             'sphere_radius': 1,
+                             'color': self.protocol_parameters['intensity'],
+                             'theta': adj_center[0],
+                             'phi': adj_center[1]}
+
+        self.epoch_parameters = (ring_parameters, spot_parameters)
+
+        self.convenience_parameters = {'current_thickness': current_thickness}
+
+    def loadStimuli(self, client):
+        surround_spot_paras = self.epoch_parameters[0].copy()
+        looming_spot_paras = self.epoch_parameters[1].copy()
+
+        multicall = flyrpc.multicall.MyMultiCall(client.manager)
+        bg = self.run_parameters.get('idle_color')
+        multicall.load_stim('ConstantBackground', color=[bg, bg, bg, 1.0])
+        multicall.load_stim(**surround_spot_paras, hold=True)
+        multicall.load_stim(**looming_spot_paras, hold=True)
+
+        multicall()
+
+    def getParameterDefaults(self):
+        self.protocol_parameters = {'thickness': [10.0, 20.0],
+                                    'rf_diameter': 40.0,
+                                    'start_size': 5,
+                                    'end_size': 40.0,
+                                    'rv_ratio': 40.0,
+                                    'intensity': 0.0,
+                                    'center': [0, 0],
+                                    'randomize_order': True}
+
+    def getRunParameterDefaults(self):
+        self.run_parameters = {'protocol_ID': 'SurroundInhibition',
+                               'num_epochs': 40,
+                               'pre_time': 0.5,
+                               'stim_time': 1.0,
+                               'tail_time': 1.5,
+                               'idle_color': 0.5}
+
+
+# class SpotPair(BaseProtocol):
+#     def __init__(self, cfg):
+#         super().__init__(cfg)
+#
+#         self.getRunParameterDefaults()
+#         self.getParameterDefaults()
+#
+#     def getEpochParameters(self):
+#         current_speed_2 = self.selectParametersFromLists(self.protocol_parameters['speed_2'], randomize_order=self.protocol_parameters['randomize_order'])
+#
+#         center = self.protocol_parameters['center']
+#         center_1 = [center[0], center[1] + self.protocol_parameters['y_separation']/2]
+#         spot_1_parameters =  self.getMovingSpotParameters(color=self.protocol_parameters['intensity'][0],
+#                                                           radius=self.protocol_parameters['diameter'][0]/2,
+#                                                           center=center_1,
+#                                                           speed=self.protocol_parameters['speed_1'],
+#                                                           angle=0)
+#         center_2 = [center[0], center[1] - self.protocol_parameters['y_separation']/2]
+#         spot_2_parameters =  self.getMovingSpotParameters(color=self.protocol_parameters['intensity'][1],
+#                                                           radius=self.protocol_parameters['diameter'][1]/2,
+#                                                           center=center_2,
+#                                                           speed=current_speed_2,
+#                                                           angle=0)
+#
+#
+#         self.epoch_parameters = (spot_1_parameters, spot_2_parameters)
+#
+#         self.convenience_parameters = {'current_speed_2': current_speed_2}
+#
+#     def loadStimuli(self, client):
+#         spot_1_parameters = self.epoch_parameters[0].copy()
+#         spot_2_parameters = self.epoch_parameters[1].copy()
+#
+#         multicall = flyrpc.multicall.MyMultiCall(client.manager)
+#         bg = self.run_parameters.get('idle_color')
+#         multicall.load_stim('ConstantBackground', color=[bg, bg, bg, 1.0])
+#         multicall.load_stim(**spot_1_parameters, hold=True)
+#         multicall.load_stim(**spot_2_parameters, hold=True)
+#
+#         multicall()
+#
+#     def getParameterDefaults(self):
+#         self.protocol_parameters = {'diameter': [5.0, 5.0],
+#                                     'intensity': [0.0, 0.0],
+#                                     'center': [0, 0],
+#                                     'y_separation': 7.0,
+#                                     'speed_1': 80.0,
+#                                     'speed_2': [-80.0, -40.0, 0.0, 40.0, 80.0],
+#                                     'randomize_order': True}
+#
+#     def getRunParameterDefaults(self):
+#         self.run_parameters = {'protocol_ID': 'SpotPair',
+#                                'num_epochs': 40,
+#                                'pre_time': 0.5,
+#                                'stim_time': 4.0,
+#                                'tail_time': 1.0,
+#                                'idle_color': 0.5}
 
 
 class UniformFlash(BaseProtocol):
