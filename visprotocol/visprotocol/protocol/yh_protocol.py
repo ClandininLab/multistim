@@ -595,12 +595,9 @@ class ExpandingRectangle(BaseProtocol):
         endW = (stim_time, width+2*stim_time*speed)
 
         w = [startW, endW]
-
-
         width_traj = {'name': 'tv_pairs',
-                        'tv_pairs': w,
-                        'kind': 'linear'}
-
+                      'tv_pairs': w,
+                      'kind': 'linear'}
         patch_parameters = {'name': 'MovingPatch',
                             'width': width_traj,
                             'height': height,
@@ -644,20 +641,35 @@ class SurroundInhibition(BaseProtocol):
 
     def getEpochParameters(self):
         thickness = self.protocol_parameters['thickness']
-        current_thickness = self.selectParametersFromLists(thickness,
-                                                          randomize_order=self.protocol_parameters['randomize_order'])
         diameter = self.protocol_parameters['rf_diameter']
+        inhibit_time = self.protocol_parameters['inhibit_time']
+        # current_thickness = self.selectParametersFromLists(thickness,
+        #                                                    randomize_order=self.protocol_parameters['randomize_order'])
+        current_paras = self.selectParametersFromLists((thickness, diameter, inhibit_time), all_combinations=True,
+                                                       randomize_order=self.protocol_parameters['randomize_order'])
+        current_thickness = current_paras[0]
+        current_diameter = current_paras[1]
+        current_inhibit_time = current_paras[2]
+
         center = self.protocol_parameters['center']
-        ring_parameters = self.getMovingRingParameters(color=self.protocol_parameters['intensity'],
-                                                       inner_radius=diameter/2,
+        bg_color = self.run_parameters.get('idle_color')
+        surround_color = self.protocol_parameters['intensity']
+        stim_time = self.run_parameters['stim_time']
+
+        color_traj = {'name': 'tv_pairs',
+                      'tv_pairs': [(0, bg_color), (current_inhibit_time, bg_color),
+                                   (current_inhibit_time, surround_color), (stim_time, surround_color)],
+                      'kind': 'linear'}
+        ring_parameters = self.getMovingRingParameters(color=color_traj,
+                                                       inner_radius=current_diameter/2,
                                                        thickness=current_thickness,
                                                        center=center,
                                                        speed=0,
                                                        angle=0)
 
-        stim_time = self.run_parameters['stim_time']
+        #stim_time = self.run_parameters['stim_time']
         start_size = self.protocol_parameters['start_size']
-        end_size = self.protocol_parameters['end_size']
+        end_size = current_diameter
 
         # adjust center to screen center
         adj_center = self.adjustCenter(self.protocol_parameters['center'])
@@ -672,15 +684,17 @@ class SurroundInhibition(BaseProtocol):
                   'end_size': end_size}
 
         spot_parameters = {'name': 'MovingSpot',
-                             'radius': r_traj,
-                             'sphere_radius': 1,
-                             'color': self.protocol_parameters['intensity'],
-                             'theta': adj_center[0],
-                             'phi': adj_center[1]}
+                           'radius': r_traj,
+                           'sphere_radius': 1,
+                           'color': self.protocol_parameters['intensity'],
+                           'theta': adj_center[0],
+                           'phi': adj_center[1]}
 
         self.epoch_parameters = (ring_parameters, spot_parameters)
 
-        self.convenience_parameters = {'current_thickness': current_thickness}
+        self.convenience_parameters = {'current_thickness': current_thickness,
+                                       'current_diameter': current_diameter,
+                                       'current_inhibit_time': current_inhibit_time}
 
     def loadStimuli(self, client):
         surround_spot_paras = self.epoch_parameters[0].copy()
@@ -695,12 +709,12 @@ class SurroundInhibition(BaseProtocol):
         multicall()
 
     def getParameterDefaults(self):
-        self.protocol_parameters = {'thickness': [10.0, 20.0],
-                                    'rf_diameter': 40.0,
+        self.protocol_parameters = {'thickness': [4.0, 8.0],
+                                    'rf_diameter': [40.0],
                                     'start_size': 5,
-                                    'end_size': 40.0,
                                     'rv_ratio': 40.0,
                                     'intensity': 0.0,
+                                    'inhibit_time': [0.2],
                                     'center': [0, 0],
                                     'randomize_order': True}
 
