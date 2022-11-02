@@ -116,6 +116,26 @@ def simple_hour2sec(hour_string):
     return hour[0] * 3600 + hour[1] * 60 + hour[2]
 
 
+def remove_extreme_trace(traces, wid=10, thr=6):
+    trace_list = traces.copy()
+    bad_inds = []
+    for i, trace in enumerate(trace_list):
+        #extreme_value = np.max(np.abs(trace))
+        extreme_value_point = np.argmax(np.abs(trace))
+        extreme_value = np.mean(trace[np.max([extreme_value_point-wid, 0]):extreme_value_point+wid])
+        tmp = trace_list.copy()
+        _ = tmp.pop(i)
+        test_values = [np.mean(t[np.max([extreme_value_point-wid, 0]):extreme_value_point+wid]) for t in tmp]
+        test_mean = np.mean(test_values)
+        test_std = np.std(test_values)
+        if np.abs(extreme_value-test_mean)/test_std > thr:
+            print('trace No. {} is bad'.format(i))
+            bad_inds.append(i)
+    if len(bad_inds) > 0:
+        traces = [t for i, t in enumerate(traces) if i not in bad_inds]
+    return traces
+
+
 def getStimulusTypes(ID: ImagingDataObject, para_key=['color']):
     stims = []
     epoch_parameters = ID.getEpochParameters()
@@ -156,13 +176,17 @@ def stimulus_triggered_average(ID: ImagingDataObject, timestamps, brain, stimulu
 
 def get_responses_per_condition(ID: ImagingDataObject, roi_data, para_key=['color']):
     stims, type2ind = getStimulusTypes(ID, para_key)
+    run_parameters = ID.getRunParameters()
     ensemble = [[] for _ in type2ind.keys()]
     relative_time = [[] for _ in type2ind.keys()]
     traces = roi_data['epoch_response'][0, :]
     for idx, trace in enumerate(traces):
         which_type = type2ind[stims[idx]]
         ensemble[which_type].append(trace)
-        relative_time = roi_data['time_vector']
+        relative_time = roi_data['time_vector'] - run_parameters['pre_time']
+
+    for ind in type2ind.values():
+        ensemble[ind] = remove_extreme_trace(ensemble[ind])
 
     return type2ind, ensemble, relative_time
 
@@ -175,14 +199,15 @@ def getStimulusTime(ID: ImagingDataObject, fs=50):
     return np.arange(0, int(fs * epoch_time)) / fs - run_parameters['pre_time']
 
 
-def summary_figure(ID: ImagingDataObject, condition_number=2, figure_size=(16, 16), save_dir=None):
+def summary_figure(ID: ImagingDataObject, condition_number=2, figure_size=(20, 16), save_dir=None):
     run_parameters = ID.getRunParameters()
     epoch_parameters = ID.getEpochParameters()
     experiment_date = ID.file_path.split('/')[-1].split('.')[0]
     # fly_metadata = ID.getFlyMetadata()
     # acquisition_metadata = ID.getAcquisitionMetadata()
     roi_set_names = ID.getRoiSetNames()
-
+    if 'bg' not in roi_set_names:
+        return
     roi_set_names.remove('bg')
 
     condition = [k for k in epoch_parameters[0].keys() if 'current' in k][:condition_number]
@@ -193,7 +218,7 @@ def summary_figure(ID: ImagingDataObject, condition_number=2, figure_size=(16, 1
     para_set = list(type2ind.keys())
     res_dict = {para:[] for para in para_set}
 
-    fh, ax = plt.subplots(len(para_set), len(roi_set_names)+1, figsize=figure_size, tight_layout=True, facecolor='snow')
+    fh, ax = plt.subplots(len(para_set), len(roi_set_names)+2, figsize=figure_size, tight_layout=True, facecolor='snow')
     fh.suptitle(figure_title)
     [x.set_ylim([-0.2, 0.1]) for x in ax.ravel()]
     #[plot_tools.cleanAxes(x) for x in ax.ravel()]
@@ -213,13 +238,12 @@ def summary_figure(ID: ImagingDataObject, condition_number=2, figure_size=(16, 1
                     #ax[para, ind].set_title('ROI {}'.format(ind+1), color=ID.colors[ind+1], fontsize=12)
                     ax[p_ind, ind].set_title(roi_set_names[ind], color=ID.colors[ind+1], fontsize=12)
                 if ind == 0:
-                    ax[p_ind, ind].set_ylabel(para_set[p_ind], color='k', fontsize=8)
+                    ax[p_ind, ind].set_ylabel(para_set[p_ind], color='k', fontsize=10)
         else:
             ax[ind].axhline(y=0, color='k', alpha=0.5)
             type2ind, ensemble, relative_time = get_responses_per_condition(ID, roi_data, para_key=condition)
             #ax[ind, para].fill_betweenx(y=[-1, 1], x1=sac_st, x2=sac_st+0.20, color='y', linewidth=1)
             res = ensemble[0]
-            res_dict[para].append(np.mean(res, axis=0))
             ax[ind].plot(relative_time, np.mean(res, axis=0))
             ax[ind].set_title('ROI {}'.format(ind+1), color=ID.colors[ind+1], fontsize=12)
 
@@ -230,9 +254,16 @@ def summary_figure(ID: ImagingDataObject, condition_number=2, figure_size=(16, 1
             ax[p_ind, ind].plot(relative_time, np.mean(tmp, axis=0))
             if p_ind == 0:
                 ax[p_ind, ind].set_title('average', color=ID.colors[ind+1], fontsize=12)
+        ID.generateRoiMap(roi_set_names[0], ax=ax[0, ind + 1])
+        ax[0, ind + 1].set_ylim([0, 320])
+        for p_ind, para in enumerate(para_set):
+            if p_ind > 0:
+                ax[p_ind, ind + 1].remove()
     else:
         tmp = np.vstack(res_dict[para])
         ax[ind].plot(relative_time, np.mean(tmp, axis=0))
+        ID.generateRoiMap(roi_set_names[0], ax=ax[ind + 1])
+        ax[ind + 1].set_ylim([0, 320])
 
     if save_dir:
         save_path = os.path.join(save_dir, figure_title+'.png')
