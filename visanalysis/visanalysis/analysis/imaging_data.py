@@ -401,7 +401,7 @@ class ImagingDataObject():
         else:
             return time_vector, response_matrix
 
-    def generateRoiMap(self, roi_name, scale_bar_length=0, z=0):
+    def generateRoiMap(self, roi_name, scale_bar_length=0, z=0, ax=None):
         """
         Make roi map image in a new figure.
         Params:
@@ -413,7 +413,8 @@ class ImagingDataObject():
         new_image = plot_tools.overlayImage(roi_data.get('roi_image'),
                                             roi_data.get('roi_mask'), 0.5, self.colors, z=z)
 
-        fh, ax = plt.subplots(1, 1, figsize=(4,4))
+        if ax is None:
+            fh, ax = plt.subplots(1, 1, figsize=(4,4))
         ax.imshow(new_image)
         ax.set_aspect('equal')
         ax.set_axis_off()
