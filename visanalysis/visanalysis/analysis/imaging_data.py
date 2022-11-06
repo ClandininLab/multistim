@@ -409,6 +409,10 @@ class ImagingDataObject():
             scale_bar_length: (microns)
             z: index of z plane to display, for xyz images
         """
+        if isinstance(roi_name, list):
+            roi_number = [len(self.getRoiResponses(n)['roi_mask']) for n in roi_name]
+            roi_idx = np.argmax(roi_number)
+            roi_name = roi_name[roi_idx]
         roi_data = self.getRoiResponses(roi_name)
         new_image = plot_tools.overlayImage(roi_data.get('roi_image'),
                                             roi_data.get('roi_mask'), 0.5, self.colors, z=z)

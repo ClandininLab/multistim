@@ -199,28 +199,56 @@ def getStimulusTime(ID: ImagingDataObject, fs=50):
     return np.arange(0, int(fs * epoch_time)) / fs - run_parameters['pre_time']
 
 
-def summary_figure(ID: ImagingDataObject, condition_number=2, figure_size=(20, 16), save_dir=None):
-    run_parameters = ID.getRunParameters()
+def get_roi_mean(ID: ImagingDataObject, condition_number=2):
     epoch_parameters = ID.getEpochParameters()
-    experiment_date = ID.file_path.split('/')[-1].split('.')[0]
-    # fly_metadata = ID.getFlyMetadata()
-    # acquisition_metadata = ID.getAcquisitionMetadata()
     roi_set_names = ID.getRoiSetNames()
     if 'bg' not in roi_set_names:
+        return
+    elif len(roi_set_names) < 3:
         return
     roi_set_names.remove('bg')
 
     condition = [k for k in epoch_parameters[0].keys() if 'current' in k][:condition_number]
-    #print(condition)
+    stims, type2ind = getStimulusTypes(ID, condition)
+    para_set = list(type2ind.keys())
+    res_dict = {para:[] for para in para_set}
+
+    for ind, roi in enumerate(roi_set_names):
+        roi_data = ID.getRoiResponses(roi, background_subtraction=True)
+        type2ind, ensemble, relative_time = get_responses_per_condition(ID, roi_data, para_key=condition)
+        if len(para_set) > 1:
+            for p_ind, para in enumerate(para_set):
+                res = ensemble[type2ind[para]]
+                res_dict[para].append(np.mean(res, axis=0))
+        else:
+            type2ind, ensemble, relative_time = get_responses_per_condition(ID, roi_data, para_key=condition)
+            res = ensemble[0]
+            res_dict[para_set[0]].append(np.mean(res, axis=0))
+    return relative_time, res_dict
+
+
+def summary_figure(ID: ImagingDataObject, condition_number=2, figure_size=(4, 4), ylim=[-0.2, 0.1], save_dir=None):
+    run_parameters = ID.getRunParameters()
+    epoch_parameters = ID.getEpochParameters()
+    experiment_date = ID.file_path.split('/')[-1].split('.')[0]
+    roi_set_names = ID.getRoiSetNames()
+    if 'bg' not in roi_set_names:
+        return
+    elif len(roi_set_names) < 3:
+        return
+    roi_set_names.remove('bg')
+
+    condition = [k for k in epoch_parameters[0].keys() if 'current' in k][:condition_number]
     stims, type2ind = getStimulusTypes(ID, condition)
 
     figure_title = run_parameters['protocol_ID'] + '_' + experiment_date + '_trial_' + str(ID.series_number)
     para_set = list(type2ind.keys())
     res_dict = {para:[] for para in para_set}
 
-    fh, ax = plt.subplots(len(para_set), len(roi_set_names)+2, figsize=figure_size, tight_layout=True, facecolor='snow')
+    big_figure_size = (figure_size[0]*(len(roi_set_names)+2), figure_size[1]*len(para_set))
+    fh, ax = plt.subplots(len(para_set), len(roi_set_names)+2, figsize=big_figure_size, tight_layout=True, facecolor='snow')
     fh.suptitle(figure_title)
-    [x.set_ylim([-0.2, 0.1]) for x in ax.ravel()]
+    [x.set_ylim(ylim) for x in ax.ravel()]
     #[plot_tools.cleanAxes(x) for x in ax.ravel()]
 
     for ind, roi in enumerate(roi_set_names):
@@ -235,35 +263,48 @@ def summary_figure(ID: ImagingDataObject, condition_number=2, figure_size=(20, 1
                 ax[p_ind, ind].plot(relative_time, np.mean(res, axis=0))
 
                 if p_ind == 0:
-                    #ax[para, ind].set_title('ROI {}'.format(ind+1), color=ID.colors[ind+1], fontsize=12)
                     ax[p_ind, ind].set_title(roi_set_names[ind], color=ID.colors[ind+1], fontsize=12)
                 if ind == 0:
                     ax[p_ind, ind].set_ylabel(para_set[p_ind], color='k', fontsize=10)
         else:
-            ax[ind].axhline(y=0, color='k', alpha=0.5)
             type2ind, ensemble, relative_time = get_responses_per_condition(ID, roi_data, para_key=condition)
-            #ax[ind, para].fill_betweenx(y=[-1, 1], x1=sac_st, x2=sac_st+0.20, color='y', linewidth=1)
             res = ensemble[0]
+            res_dict[para_set[0]].append(np.mean(res, axis=0))
             ax[ind].plot(relative_time, np.mean(res, axis=0))
             ax[ind].set_title('ROI {}'.format(ind+1), color=ID.colors[ind+1], fontsize=12)
 
     ind = len(roi_set_names)
-    if len(para_set) > 1:
-        for p_ind, para in enumerate(para_set):
-            tmp = np.vstack(res_dict[para])
-            ax[p_ind, ind].plot(relative_time, np.mean(tmp, axis=0))
-            if p_ind == 0:
-                ax[p_ind, ind].set_title('average', color=ID.colors[ind+1], fontsize=12)
-        ID.generateRoiMap(roi_set_names[0], ax=ax[0, ind + 1])
-        ax[0, ind + 1].set_ylim([0, 320])
-        for p_ind, para in enumerate(para_set):
-            if p_ind > 0:
-                ax[p_ind, ind + 1].remove()
+    if ind > 1:  # check if the average is needed
+        if len(para_set) > 1:
+            for p_ind, para in enumerate(para_set):
+                tmp = np.vstack(res_dict[para])
+                ax[p_ind, ind].plot(relative_time, np.mean(tmp, axis=0))
+                if p_ind == 0:
+                    ax[p_ind, ind].set_title('average', color=ID.colors[ind+1], fontsize=12)
+            ID.generateRoiMap(roi_set_names, ax=ax[0, ind + 1])
+            ax[0, ind + 1].set_ylim([0, 320])
+            for p_ind, para in enumerate(para_set):
+                if p_ind > 0:
+                    ax[p_ind, ind + 1].remove()
+        else:
+            tmp = np.vstack(res_dict[para_set[0]])
+            ax[ind].plot(relative_time, tmp.mean(0))
+            ax[ind].set_title('average', color=ID.colors[ind + 1], fontsize=12)
+            ID.generateRoiMap(roi_set_names, ax=ax[ind + 1])
+            ax[ind + 1].set_ylim([0, 320])
     else:
-        tmp = np.vstack(res_dict[para])
-        ax[ind].plot(relative_time, np.mean(tmp, axis=0))
-        ID.generateRoiMap(roi_set_names[0], ax=ax[ind + 1])
-        ax[ind + 1].set_ylim([0, 320])
+        if len(para_set) > 1:
+            ID.generateRoiMap(roi_set_names, ax=ax[0, ind])
+            ax[0, ind + 1].set_ylim([0, 320])
+            for p_ind, para in enumerate(para_set):
+                if p_ind > 0:
+                    ax[p_ind, ind].remove()
+                    ax[p_ind, ind+1].remove()
+            ax[0, ind + 1].remove()
+        else:
+            ID.generateRoiMap(roi_set_names, ax=ax[ind])
+            ax[ind].set_ylim([0, 320])
+            ax[ind + 1].remove()
 
     if save_dir:
         save_path = os.path.join(save_dir, figure_title+'.png')
