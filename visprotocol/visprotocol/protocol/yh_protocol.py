@@ -867,12 +867,12 @@ class StillRings(BaseProtocol):
         current_radius = self.selectParametersFromLists(radius,
                                                         randomize_order=self.protocol_parameters['randomize_order'])
 
-        self.epoch_parameters = self.getMovingRingParameters(color=self.protocol_parameters['intensity'],
-                                                             inner_radius=current_radius,
-                                                             thickness=self.protocol_parameters['thickness'],
-                                                             center=adj_center,
-                                                             speed=0,
-                                                             angle=0)
+        self.epoch_parameters = {'name': 'MovingRing',
+                                 'inner_radius': current_radius,
+                                 'thickness': self.protocol_parameters['thickness'],
+                                 'color': self.protocol_parameters['intensity'],
+                                 'theta': adj_center[0],
+                                 'phi': adj_center[1]}
 
         self.convenience_parameters = {'current_radius': current_radius}
 
