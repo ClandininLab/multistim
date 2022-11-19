@@ -753,7 +753,7 @@ def get_loom_size(rv_ratio, start_size, end_size, t):
     # calculate angular size at t
     d0 = rv_ratio / np.tan(np.deg2rad(start_size / 2))
     angular_size = 2 * \
-        np.rad2deg(np.arctan(rv_ratio * (1 / (d0 - t))))
+                   np.rad2deg(np.arctan(rv_ratio * (1 / (d0 - t))))
     # Cap the curve at end_size and have it just hang there
     if angular_size > end_size or d0 <= t:
         angular_size = end_size
@@ -806,6 +806,85 @@ class SpotSeries(BaseProtocol):
 
     def getRunParameterDefaults(self):
         self.run_parameters = {'protocol_ID': 'SpotSeries',
+                               'num_epochs': 75,
+                               'pre_time': 0.5,
+                               'stim_time': 1.0,
+                               'tail_time': 1.0,
+                               'idle_color': 0.5}
+
+
+class StillSpots(BaseProtocol):
+    def __init__(self, cfg):
+        super().__init__(cfg)
+
+        self.getRunParameterDefaults()
+        self.getParameterDefaults()
+
+    def getEpochParameters(self):
+        stim_time = self.run_parameters['stim_time']
+        # adjust center to screen center
+        adj_center = self.adjustCenter(self.protocol_parameters['center'])
+        radius = self.protocol_parameters['radius']
+        current_radius = self.selectParametersFromLists(radius,
+                                                        randomize_order=self.protocol_parameters['randomize_order'])
+
+        self.epoch_parameters = {'name': 'MovingSpot',
+                                 'radius': current_radius,
+                                 'sphere_radius': 1,
+                                 'color': self.protocol_parameters['intensity'],
+                                 'theta': adj_center[0],
+                                 'phi': adj_center[1]}
+
+        self.convenience_parameters = {'current_radius': current_radius}
+
+    def getParameterDefaults(self):
+        self.protocol_parameters = {'intensity': 0.0,
+                                    'center': [0, 0],
+                                    'radius': [5, 10, 15],
+                                    'randomize_order': True}
+
+    def getRunParameterDefaults(self):
+        self.run_parameters = {'protocol_ID': 'StillSpots',
+                               'num_epochs': 75,
+                               'pre_time': 0.5,
+                               'stim_time': 1.0,
+                               'tail_time': 1.0,
+                               'idle_color': 0.5}
+
+
+class StillRings(BaseProtocol):
+    def __init__(self, cfg):
+        super().__init__(cfg)
+
+        self.getRunParameterDefaults()
+        self.getParameterDefaults()
+
+    def getEpochParameters(self):
+        stim_time = self.run_parameters['stim_time']
+        # adjust center to screen center
+        adj_center = self.adjustCenter(self.protocol_parameters['center'])
+        radius = self.protocol_parameters['radius']
+        current_radius = self.selectParametersFromLists(radius,
+                                                        randomize_order=self.protocol_parameters['randomize_order'])
+
+        self.epoch_parameters = self.getMovingRingParameters(color=self.protocol_parameters['intensity'],
+                                                             inner_radius=current_radius,
+                                                             thickness=self.protocol_parameters['thickness'],
+                                                             center=adj_center,
+                                                             speed=0,
+                                                             angle=0)
+
+        self.convenience_parameters = {'current_radius': current_radius}
+
+    def getParameterDefaults(self):
+        self.protocol_parameters = {'intensity': 0.0,
+                                    'center': [0, 0],
+                                    'radius': [5, 10, 15],
+                                    'thickness': 5,
+                                    'randomize_order': True}
+
+    def getRunParameterDefaults(self):
+        self.run_parameters = {'protocol_ID': 'StillRings',
                                'num_epochs': 75,
                                'pre_time': 0.5,
                                'stim_time': 1.0,
