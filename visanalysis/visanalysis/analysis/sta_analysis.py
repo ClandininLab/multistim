@@ -227,7 +227,9 @@ def get_roi_mean(ID: ImagingDataObject, condition_number=2):
     return relative_time, res_dict
 
 
-def summary_figure(ID: ImagingDataObject, condition_number=2, figure_size=(4, 4), ylim=[-0.2, 0.1], save_dir=None):
+def summary_figure(ID: ImagingDataObject, condition_number=2, figure_size=(4, 4), ylim=None, condition=None, save_dir=None):
+    if ylim is None:
+        ylim = [-0.2, 0.1]
     run_parameters = ID.getRunParameters()
     epoch_parameters = ID.getEpochParameters()
     experiment_date = ID.file_path.split('/')[-1].split('.')[0]
@@ -238,7 +240,8 @@ def summary_figure(ID: ImagingDataObject, condition_number=2, figure_size=(4, 4)
         return
     roi_set_names.remove('bg')
 
-    condition = [k for k in epoch_parameters[0].keys() if 'current' in k][:condition_number]
+    if condition is None:
+        condition = [k for k in epoch_parameters[0].keys() if 'current' in k][:condition_number]
     stims, type2ind = getStimulusTypes(ID, condition)
 
     figure_title = run_parameters['protocol_ID'] + '_' + experiment_date + '_trial_' + str(ID.series_number)
@@ -271,7 +274,9 @@ def summary_figure(ID: ImagingDataObject, condition_number=2, figure_size=(4, 4)
             res = ensemble[0]
             res_dict[para_set[0]].append(np.mean(res, axis=0))
             ax[ind].plot(relative_time, np.mean(res, axis=0))
-            ax[ind].set_title('ROI {}'.format(ind+1), color=ID.colors[ind+1], fontsize=12)
+            ax[ind].set_title(roi_set_names[ind], color=ID.colors[ind+1], fontsize=12)
+            if ind == 0:
+                ax[ind].set_ylabel(para_set[0], color='k', fontsize=10)
 
     ind = len(roi_set_names)
     if ind > 1:  # check if the average is needed
