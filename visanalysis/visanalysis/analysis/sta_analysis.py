@@ -246,6 +246,7 @@ def summary_figure(ID: ImagingDataObject, condition_number=2, figure_size=(4, 4)
 
     figure_title = run_parameters['protocol_ID'] + '_' + experiment_date + '_trial_' + str(ID.series_number)
     para_set = list(type2ind.keys())
+    para_set = list(sorted(para_set))  # for making the parameters consistent across figures
     res_dict = {para:[] for para in para_set}
 
     big_figure_size = (figure_size[0]*(len(roi_set_names)+2), figure_size[1]*len(para_set))
