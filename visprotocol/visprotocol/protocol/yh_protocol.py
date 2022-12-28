@@ -420,6 +420,17 @@ class LoomingSpot(BaseProtocol):
                   'start_size': start_size,
                   'end_size': end_size}
 
+        if current_rv_ratio > 0:
+            current_radius = start_size/2
+        else:
+            current_radius = end_size/2
+        self.pre_epoch_parameters = {'name': 'MovingSpot',
+                                     'radius': current_radius,
+                                     'sphere_radius': 1,
+                                     'color': self.protocol_parameters['intensity'],
+                                     'theta': adj_center[0],
+                                     'phi': adj_center[1]}
+
         self.epoch_parameters = {'name': 'MovingSpot',
                                  'radius': r_traj,
                                  'sphere_radius': 1,
@@ -444,6 +455,42 @@ class LoomingSpot(BaseProtocol):
                                'stim_time': 1.0,
                                'tail_time': 1.0,
                                'idle_color': 0.5}
+
+    def loadStimuli(self, client):
+        pass
+
+    def startStimuli(self, client, append_stim_frames=False, print_profile=True):
+        # pre time
+        bg = self.run_parameters.get('idle_color')
+        multicall = flyrpc.multicall.MyMultiCall(client.manager)
+        multicall.load_stim('ConstantBackground', color=[bg, bg, bg, 1.0])
+        passedParameters = self.pre_epoch_parameters.copy()
+        multicall.load_stim(**passedParameters, hold=True)
+        multicall()
+        multicall.start_stim(append_stim_frames=append_stim_frames)
+        multicall()
+        sleep(self.run_parameters['pre_time'])
+
+        # stim time
+        bg = self.run_parameters.get('idle_color')
+        multicall = flyrpc.multicall.MyMultiCall(client.manager)
+        multicall.load_stim('ConstantBackground', color=[bg, bg, bg, 1.0])
+        passedParameters = self.epoch_parameters.copy()
+        multicall.load_stim(**passedParameters, hold=True)
+        multicall()
+        multicall = flyrpc.multicall.MyMultiCall(client.manager)
+        multicall.start_stim(append_stim_frames=append_stim_frames)
+        multicall.start_corner_square()
+        multicall()
+        sleep(self.run_parameters['stim_time'])
+
+        # tail time
+        multicall = flyrpc.multicall.MyMultiCall(client.manager)
+        multicall.stop_stim(print_profile=print_profile)
+        multicall.black_corner_square()
+        multicall()
+
+        sleep(self.run_parameters['tail_time'])
 
 
 class GridLoomingSpot(BaseProtocol):

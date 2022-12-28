@@ -136,11 +136,17 @@ def remove_extreme_trace(traces, wid=10, thr=6):
     return traces
 
 
-def getStimulusTypes(ID: ImagingDataObject, para_key=['color']):
+def getStimulusTypes(ID: ImagingDataObject, para_key=['color'], run_para_key=None):
     stims = []
     epoch_parameters = ID.getEpochParameters()
+    run_parameters = ID.getRunParameters()
     for epoch in epoch_parameters:
-        stims.append(encode_stim(para_key, epoch))
+        if run_para_key is None:
+            stims.append(encode_stim(para_key, epoch))
+        else:
+            stim_ = run_para_key + '_' + str(run_parameters[run_para_key]).replace('.', 'p') + '#' +\
+                    encode_stim(para_key, epoch)
+            stims.append(stim_)
 
     stim_types = list(set(stims))
     type2ind = {tp: ind for ind, tp in enumerate(stim_types)}
@@ -174,8 +180,8 @@ def stimulus_triggered_average(ID: ImagingDataObject, timestamps, brain, stimulu
     return type2ind, ensemble, relative_time
 
 
-def get_responses_per_condition(ID: ImagingDataObject, roi_data, para_key=['color']):
-    stims, type2ind = getStimulusTypes(ID, para_key)
+def get_responses_per_condition(ID: ImagingDataObject, roi_data, para_key=['color'], run_para_key=None):
+    stims, type2ind = getStimulusTypes(ID, para_key, run_para_key)
     run_parameters = ID.getRunParameters()
     ensemble = [[] for _ in type2ind.keys()]
     relative_time = [[] for _ in type2ind.keys()]
@@ -199,7 +205,7 @@ def getStimulusTime(ID: ImagingDataObject, fs=50):
     return np.arange(0, int(fs * epoch_time)) / fs - run_parameters['pre_time']
 
 
-def get_roi_mean(ID: ImagingDataObject, condition_number=2):
+def get_roi_mean(ID: ImagingDataObject, condition_number=2, run_para_key=None):
     epoch_parameters = ID.getEpochParameters()
     roi_set_names = ID.getRoiSetNames()
     if 'bg' not in roi_set_names:
@@ -209,25 +215,26 @@ def get_roi_mean(ID: ImagingDataObject, condition_number=2):
     roi_set_names.remove('bg')
 
     condition = [k for k in epoch_parameters[0].keys() if 'current' in k][:condition_number]
-    stims, type2ind = getStimulusTypes(ID, condition)
+    stims, type2ind = getStimulusTypes(ID, condition, run_para_key)
     para_set = list(type2ind.keys())
     res_dict = {para:[] for para in para_set}
 
     for ind, roi in enumerate(roi_set_names):
         roi_data = ID.getRoiResponses(roi, background_subtraction=True)
-        type2ind, ensemble, relative_time = get_responses_per_condition(ID, roi_data, para_key=condition)
+        type2ind, ensemble, relative_time = get_responses_per_condition(ID, roi_data, para_key=condition, run_para_key=run_para_key)
         if len(para_set) > 1:
             for p_ind, para in enumerate(para_set):
                 res = ensemble[type2ind[para]]
                 res_dict[para].append(np.mean(res, axis=0))
         else:
-            type2ind, ensemble, relative_time = get_responses_per_condition(ID, roi_data, para_key=condition)
+            type2ind, ensemble, relative_time = get_responses_per_condition(ID, roi_data, para_key=condition, run_para_key=run_para_key)
             res = ensemble[0]
             res_dict[para_set[0]].append(np.mean(res, axis=0))
     return relative_time, res_dict
 
 
-def summary_figure(ID: ImagingDataObject, condition_number=2, figure_size=(4, 4), ylim=None, condition=None, save_dir=None):
+def summary_figure(ID: ImagingDataObject, condition_number=2, figure_size=(4, 4), ylim=None, condition=None,
+                   save_dir=None, run_para_key=None):
     if ylim is None:
         ylim = [-0.2, 0.1]
     run_parameters = ID.getRunParameters()
@@ -242,7 +249,7 @@ def summary_figure(ID: ImagingDataObject, condition_number=2, figure_size=(4, 4)
 
     if condition is None:
         condition = [k for k in epoch_parameters[0].keys() if 'current' in k][:condition_number]
-    stims, type2ind = getStimulusTypes(ID, condition)
+    stims, type2ind = getStimulusTypes(ID, condition, run_para_key)
 
     figure_title = run_parameters['protocol_ID'] + '_' + experiment_date + '_trial_' + str(ID.series_number)
     para_set = list(type2ind.keys())
@@ -257,7 +264,7 @@ def summary_figure(ID: ImagingDataObject, condition_number=2, figure_size=(4, 4)
 
     for ind, roi in enumerate(roi_set_names):
         roi_data = ID.getRoiResponses(roi, background_subtraction=True)
-        type2ind, ensemble, relative_time = get_responses_per_condition(ID, roi_data, para_key=condition)
+        type2ind, ensemble, relative_time = get_responses_per_condition(ID, roi_data, para_key=condition, run_para_key=run_para_key)
         if len(para_set) > 1:
             for p_ind, para in enumerate(para_set):
                 #ax[ind, para].axhline(y=0, color='k', alpha=0.5)
@@ -271,7 +278,7 @@ def summary_figure(ID: ImagingDataObject, condition_number=2, figure_size=(4, 4)
                 if ind == 0:
                     ax[p_ind, ind].set_ylabel(para_set[p_ind], color='k', fontsize=10)
         else:
-            type2ind, ensemble, relative_time = get_responses_per_condition(ID, roi_data, para_key=condition)
+            type2ind, ensemble, relative_time = get_responses_per_condition(ID, roi_data, para_key=condition, run_para_key=run_para_key)
             res = ensemble[0]
             res_dict[para_set[0]].append(np.mean(res, axis=0))
             ax[ind].plot(relative_time, np.mean(res, axis=0))
