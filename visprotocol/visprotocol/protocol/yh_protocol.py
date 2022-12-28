@@ -421,9 +421,9 @@ class LoomingSpot(BaseProtocol):
                   'end_size': end_size}
 
         if current_rv_ratio > 0:
-            current_radius = start_size/2
+            current_radius = start_size / 2
         else:
-            current_radius = end_size/2
+            current_radius = end_size / 2
         self.pre_epoch_parameters = {'name': 'MovingSpot',
                                      'radius': current_radius,
                                      'sphere_radius': 1,
@@ -491,6 +491,65 @@ class LoomingSpot(BaseProtocol):
         multicall()
 
         sleep(self.run_parameters['tail_time'])
+
+
+class LinearLoom(BaseProtocol):
+    def __init__(self, cfg):
+        super().__init__(cfg)
+
+        self.getRunParameterDefaults()
+        self.getParameterDefaults()
+
+    def getEpochParameters(self):
+        stim_time = self.run_parameters['stim_time']
+        start_size = self.protocol_parameters['start_size']
+        end_size = self.protocol_parameters['end_size']
+
+        # adjust center to screen center
+        adj_center = self.adjustCenter(self.protocol_parameters['center'])
+
+        loom_speed = self.protocol_parameters['loom_speed']  # deg/sec
+        current_loom_speed = self.selectParametersFromLists(loom_speed,
+                                                            randomize_order=self.protocol_parameters['randomize_order'])
+        startR = (0, start_size/2)
+        final_r = start_size/2 + stim_time * current_loom_speed / 2
+        if final_r < end_size / 2:
+            endR = (stim_time, final_r)
+            r = [startR, endR]
+        else:
+            stop_time = (end_size - start_size)/current_loom_speed
+            middleR = (stop_time, end_size / 2)
+            endR = (stim_time, end_size / 2)
+            r = [startR, middleR, endR]
+
+        r_traj = {'name': 'tv_pairs',
+                  'tv_pairs': r,
+                  'kind': 'linear'}
+
+        self.epoch_parameters = {'name': 'MovingSpot',
+                                 'radius': r_traj,
+                                 'sphere_radius': 1,
+                                 'color': self.protocol_parameters['intensity'],
+                                 'theta': adj_center[0],
+                                 'phi': adj_center[1]}
+
+        self.convenience_parameters = {'current_rv_ratio': current_loom_speed}
+
+    def getParameterDefaults(self):
+        self.protocol_parameters = {'intensity': 0.0,
+                                    'center': [0, 0],
+                                    'start_size': 2.5,
+                                    'end_size': 80.0,
+                                    'loom_speed': [50.0, 100.0, 200.0],
+                                    'randomize_order': True}
+
+    def getRunParameterDefaults(self):
+        self.run_parameters = {'protocol_ID': 'LinearLoom',
+                               'num_epochs': 75,
+                               'pre_time': 0.5,
+                               'stim_time': 1.0,
+                               'tail_time': 1.0,
+                               'idle_color': 0.5}
 
 
 class GridLoomingSpot(BaseProtocol):
