@@ -457,6 +457,111 @@ class LoomingSpot(BaseProtocol):
                                'idle_color': 0.5}
 
     def loadStimuli(self, client):
+        # bypassing the load stim here because I loaded it in startStimuli
+        pass
+
+    def startStimuli(self, client, append_stim_frames=False, print_profile=True):
+        # pre time
+        bg = self.run_parameters.get('idle_color')
+        multicall = flyrpc.multicall.MyMultiCall(client.manager)
+        multicall.load_stim('ConstantBackground', color=[bg, bg, bg, 1.0])
+        passedParameters = self.pre_epoch_parameters.copy()
+        multicall.load_stim(**passedParameters, hold=True)
+        multicall()
+        multicall.start_stim(append_stim_frames=append_stim_frames)
+        multicall()
+        sleep(self.run_parameters['pre_time'])
+
+        # stim time
+        bg = self.run_parameters.get('idle_color')
+        multicall = flyrpc.multicall.MyMultiCall(client.manager)
+        multicall.load_stim('ConstantBackground', color=[bg, bg, bg, 1.0])
+        passedParameters = self.epoch_parameters.copy()
+        multicall.load_stim(**passedParameters, hold=True)
+        multicall()
+        multicall = flyrpc.multicall.MyMultiCall(client.manager)
+        multicall.start_stim(append_stim_frames=append_stim_frames)
+        multicall.start_corner_square()
+        multicall()
+        sleep(self.run_parameters['stim_time'])
+
+        # tail time
+        multicall = flyrpc.multicall.MyMultiCall(client.manager)
+        multicall.stop_stim(print_profile=print_profile)
+        multicall.black_corner_square()
+        multicall()
+
+        sleep(self.run_parameters['tail_time'])
+
+
+# %%
+class ReverseLoomingSpot(BaseProtocol):
+    def __init__(self, cfg):
+        super().__init__(cfg)
+
+        self.getRunParameterDefaults()
+        self.getParameterDefaults()
+
+    def getEpochParameters(self):
+        stim_time = self.run_parameters['stim_time']
+        start_size = self.protocol_parameters['start_size']
+        end_size = self.protocol_parameters['end_size']
+
+        # adjust center to screen center
+        adj_center = self.adjustCenter(self.protocol_parameters['center'])
+
+        rv_ratio = self.protocol_parameters['rv_ratio']  # msec
+        current_rv_ratio = self.selectParametersFromLists(rv_ratio,
+                                                          randomize_order=self.protocol_parameters['randomize_order'])
+
+        current_rv_ratio = current_rv_ratio / 1e3  # msec -> sec
+        if current_rv_ratio < 0:
+            r_traj = {'name': 'Loom',
+                      'rv_ratio': current_rv_ratio,
+                      'stim_time': stim_time,
+                      'start_size': start_size,
+                      'end_size': start_size}
+        else:
+            r_traj = {'name': 'Loom',
+                      'rv_ratio': current_rv_ratio,
+                      'stim_time': stim_time,
+                      'start_size': start_size,
+                      'end_size': end_size}
+        current_radius = start_size / 2
+        self.pre_epoch_parameters = {'name': 'MovingSpot',
+                                     'radius': current_radius,
+                                     'sphere_radius': 1,
+                                     'color': self.protocol_parameters['intensity'],
+                                     'theta': adj_center[0],
+                                     'phi': adj_center[1]}
+
+        self.epoch_parameters = {'name': 'MovingSpot',
+                                 'radius': r_traj,
+                                 'sphere_radius': 1,
+                                 'color': self.protocol_parameters['intensity'],
+                                 'theta': adj_center[0],
+                                 'phi': adj_center[1]}
+
+        self.convenience_parameters = {'current_rv_ratio': current_rv_ratio}
+
+    def getParameterDefaults(self):
+        self.protocol_parameters = {'intensity': 0.0,
+                                    'center': [0, 0],
+                                    'start_size': 2.5,
+                                    'end_size': 80.0,
+                                    'rv_ratio': [5.0, 10.0, 20.0, 40.0, 80.0],
+                                    'randomize_order': True}
+
+    def getRunParameterDefaults(self):
+        self.run_parameters = {'protocol_ID': 'ReverseLoomingSpot',
+                               'num_epochs': 75,
+                               'pre_time': 0.5,
+                               'stim_time': 1.0,
+                               'tail_time': 1.0,
+                               'idle_color': 0.5}
+
+    def loadStimuli(self, client):
+        # bypassing the load stim here because I loaded it in startStimuli
         pass
 
     def startStimuli(self, client, append_stim_frames=False, print_profile=True):
