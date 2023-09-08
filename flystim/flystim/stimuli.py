@@ -280,7 +280,7 @@ class TexturedCylinder(BaseProgram):
         super().__init__(screen=screen)
         self.use_texture = True
 
-    def configure(self, color=[1, 1, 1, 1], cylinder_radius=1, cylinder_height=10, theta=0, phi=0, angle=0.0):
+    def configure(self, color=[1, 1, 1, 1], cylinder_radius=1, cylinder_location=(0,0,0), cylinder_height=10, theta=0, phi=0, angle=0.0):
         """
         Parent class for a Cylinder with a texture painted on it. Fly is at (0, 0, 0).
 
@@ -293,6 +293,7 @@ class TexturedCylinder(BaseProgram):
         """
         self.color = color
         self.cylinder_radius = cylinder_radius
+        self.cylinder_location = cylinder_location
         self.cylinder_height = cylinder_height
         self.theta = make_as_trajectory(theta)
         self.phi = make_as_trajectory(phi)
@@ -312,7 +313,7 @@ class CylindricalGrating(TexturedCylinder):
         super().__init__(screen=screen)
 
     def configure(self, period=20, mean=0.5, contrast=1.0, offset=0.0, profile='sine',
-                  color=[1, 1, 1, 1], cylinder_radius=1, cylinder_height=10, theta=0, phi=0, angle=0.0):
+                  color=[1, 1, 1, 1], cylinder_radius=1, cylinder_location=(0,0,0), cylinder_height=10, theta=0, phi=0, angle=0.0):
         """
         Grating texture painted on a cylinder.
 
@@ -325,7 +326,7 @@ class CylindricalGrating(TexturedCylinder):
         :params color, cylinder_radius, cylinder_height, theta, phi, angle: see parent class
         *Any of these params except cylinder_radius, cylinder_height and profile can be passed as a trajectory dict to vary as a function of time
         """
-        super().configure(color=color, cylinder_radius=cylinder_radius, cylinder_height=cylinder_height, theta=theta, phi=phi, angle=angle)
+        super().configure(color=color, cylinder_radius=cylinder_radius, cylinder_location=cylinder_location, cylinder_height=cylinder_height, theta=theta, phi=phi, angle=angle)
 
         self.period = period
         self.mean = mean
@@ -338,11 +339,16 @@ class CylindricalGrating(TexturedCylinder):
         n_cycles = np.floor(360/self.period)
         self.cylinder_angular_extent = n_cycles * self.period
 
+        t = 0
+        theta = return_for_time_t(self.theta, t)
+        phi = return_for_time_t(self.phi, t)
+        angle = return_for_time_t(self.angle, t)
+
         self.stim_object = GlCylinder(cylinder_height=self.cylinder_height,
                                       cylinder_radius=self.cylinder_radius,
                                       cylinder_angular_extent=self.cylinder_angular_extent,
                                       color=[1, 1, 1, 1],
-                                      texture=True).rotate(np.radians(self.theta), np.radians(self.phi), np.radians(self.angle))
+                                      texture=True).rotate(np.radians(theta), np.radians(phi), np.radians(angle))
 
         self.mean = make_as_trajectory(mean)
         self.contrast = make_as_trajectory(contrast)
@@ -384,8 +390,8 @@ class RotatingGrating(CylindricalGrating):
     def __init__(self, screen):
         super().__init__(screen=screen)
 
-    def configure(self, rate=10, period=20, mean=0.5, contrast=1.0, offset=0.0, profile='square',
-                  color=[1, 1, 1, 1], alpha_by_face=None, cylinder_radius=1, cylinder_height=10, theta=0, phi=0, angle=0):
+    def configure(self, rate=10, hold_duration=0, period=20, mean=0.5, contrast=1.0, offset=0.0, profile='square',
+                  color=[1, 1, 1, 1], alpha_by_face=None, cylinder_radius=1, cylinder_location=(0,0,0), cylinder_height=10, theta=0, phi=0, angle=0):
         """
         Subclass of CylindricalGrating that rotates the grating along the varying axis of the grating.
 
@@ -393,11 +399,13 @@ class RotatingGrating(CylindricalGrating):
         allows for arbitrary spatial periods to be achieved with no discontinuities in the grating
 
         :param rate: rotation rate, degrees/sec
+        :param hold_duration: duration for which the initial image is held (seconds)
         :other params: see CylindricalGrating, TexturedCylinder
         """
         super().configure(period=period, mean=mean, contrast=contrast, offset=offset, profile=profile,
-                          color=color, cylinder_radius=cylinder_radius, cylinder_height=cylinder_height, theta=theta, phi=phi, angle=angle)
-        self.rate = rate
+                          color=color, cylinder_radius=cylinder_radius, cylinder_location=cylinder_location, cylinder_height=cylinder_height, theta=theta, phi=phi, angle=angle)
+        self.rate = make_as_trajectory(rate)
+        self.hold_duration = hold_duration
         self.alpha_by_face = alpha_by_face
         if self.alpha_by_face is None:
             self.n_faces = 32
@@ -407,6 +415,7 @@ class RotatingGrating(CylindricalGrating):
 
         self.stim_object_template = GlCylinder(cylinder_height=self.cylinder_height,
                                                cylinder_radius=self.cylinder_radius,
+                                               cylinder_location=self.cylinder_location,
                                                cylinder_angular_extent=self.cylinder_angular_extent,
                                                color=self.color,
                                                alpha_by_face=self.alpha_by_face,
@@ -414,8 +423,14 @@ class RotatingGrating(CylindricalGrating):
                                                texture=True)
 
     def eval_at(self, t, fly_position=[0, 0, 0], fly_heading=[0, 0]):
-        shift_u = t*self.rate/self.cylinder_angular_extent
-        self.stim_object = copy.copy(self.stim_object_template).shiftTexture((shift_u, 0)).rotate(np.radians(self.theta), np.radians(self.phi), np.radians(self.angle))
+        theta = return_for_time_t(self.theta, t)
+        phi = return_for_time_t(self.phi, t)
+        angle = return_for_time_t(self.angle, t)
+        rate = return_for_time_t(self.rate, t)
+
+        shift_u = max(t - self.hold_duration, 0) * rate/self.cylinder_angular_extent
+        self.stim_object = copy.copy(self.stim_object_template).shiftTexture((shift_u, 0)).rotate(np.radians(theta), np.radians(phi), np.radians(angle))
+
 
 
 class RandomBars(TexturedCylinder):
