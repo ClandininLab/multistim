@@ -938,6 +938,58 @@ class SpotSeries(BaseProtocol):
                                'idle_color': 0.5}
 
 
+class DiskFlash(BaseProtocol):
+    def __init__(self, cfg):
+        super().__init__(cfg)
+
+        self.getRunParameterDefaults()
+        self.getParameterDefaults()
+
+    def getEpochParameters(self):
+        stim_time = self.run_parameters['stim_time']
+        disk_size = self.protocol_parameters['size']
+        # adjust center to screen center
+        adj_center = self.adjustCenter(self.protocol_parameters['center'])
+        disk_color = self.protocol_parameters['intensity']
+        bg_color = self.run_parameters['idle_color']
+        color_tv_pairs = []
+        time_points = self.protocol_parameters['time_points']
+        pulse_duration = self.protocol_parameters['pulse_duration']
+        time_points2 = time_points.copy()
+        time_points2.pop(0)
+        time_points2.append(stim_time)
+        for t, t2 in zip(time_points, time_points2):
+            color_tv_pairs.append((t, disk_color))
+            color_tv_pairs.append((t + pulse_duration, bg_color))
+            color_tv_pairs.append((t2, bg_color))
+
+        color_traj = {'name': 'tv_pairs',
+                      'tv_pairs': color_tv_pairs,
+                      'kind': 'linear'}
+        self.epoch_parameters = {'name': 'MovingSpot',
+                                 'radius': disk_size,
+                                 'sphere_radius': 1,
+                                 'color': color_traj,
+                                 'theta': adj_center[0],
+                                 'phi': adj_center[1]}
+
+    def getParameterDefaults(self):
+        self.protocol_parameters = {'intensity': 0.0,
+                                    'center': [0, 0],
+                                    'size': 20,
+                                    'time_points': [0.0, 0.1, 0.2, 0.5],
+                                    'pulse_duration': 0.01,
+                                    'randomize_order': False}
+
+    def getRunParameterDefaults(self):
+        self.run_parameters = {'protocol_ID': 'DiskFlash',
+                               'num_epochs': 75,
+                               'pre_time': 0.5,
+                               'stim_time': 1.0,
+                               'tail_time': 1.0,
+                               'idle_color': 0.5}
+
+
 class StillSpots(BaseProtocol):
     def __init__(self, cfg):
         super().__init__(cfg)
