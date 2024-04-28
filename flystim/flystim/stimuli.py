@@ -119,14 +119,15 @@ class MovingRing(BaseProgram):
         self.sphere_radius = sphere_radius
 
         self.inner_radius = make_as_trajectory(inner_radius)
-        self.thickness = thickness
+        self.thickness = make_as_trajectory(thickness)
         self.color = make_as_trajectory(color)
         self.theta = make_as_trajectory(theta)
         self.phi = make_as_trajectory(phi)
 
     def eval_at(self, t, fly_position=[0, 0, 0], fly_heading=[0, 0]):
         inner_radius = return_for_time_t(self.inner_radius, t)
-        outer_radius = inner_radius + self.thickness
+        thickness = return_for_time_t(self.thickness, t)
+        outer_radius = inner_radius + thickness
         theta = return_for_time_t(self.theta, t)
         phi = return_for_time_t(self.phi, t)
         color = return_for_time_t(self.color, t)

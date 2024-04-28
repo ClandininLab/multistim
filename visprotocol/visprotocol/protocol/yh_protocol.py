@@ -137,8 +137,8 @@ class BaseProtocol(clandinin_protocol.BaseProtocol):
         if center is None: center = self.protocol_parameters['center']
         if angle is None: angle = self.protocol_parameters['angle']
         if speed is None: speed = self.protocol_parameters['speed']
-        if inner_radius is None: radius = self.protocol_parameters['inner_radius']
-        if thickness is None: radius = self.protocol_parameters['thickness']
+        if inner_radius is None: inner_radius = self.protocol_parameters['inner_radius']
+        if thickness is None: thickness = self.protocol_parameters['thickness']
         if color is None: color = self.protocol_parameters['color']
 
         center = self.adjustCenter(center)
@@ -192,158 +192,6 @@ class BaseProtocol(clandinin_protocol.BaseProtocol):
                            'theta': x_trajectory,
                            'phi': y_trajectory}
         return ring_parameters
-
-
-class DriftingSquareGrating(BaseProtocol):
-    def __init__(self, cfg):
-        super().__init__(cfg)
-
-        self.getRunParameterDefaults()
-        self.getParameterDefaults()
-
-    def getEpochParameters(self):
-        # TODO: center size with aperture (center and center_size)
-        current_angle = self.selectParametersFromLists(self.protocol_parameters['angle'],
-                                                       randomize_order=self.protocol_parameters['randomize_order'])
-
-        self.epoch_parameters = {'name': 'RotatingGrating',
-                                 'period': self.protocol_parameters['period'],
-                                 'rate': self.protocol_parameters['rate'],
-                                 'color': [1, 1, 1, 1],
-                                 'mean': self.protocol_parameters['mean'],
-                                 'contrast': self.protocol_parameters['contrast'],
-                                 'angle': current_angle,
-                                 'offset': 0.0,
-                                 'cylinder_radius': 1,
-                                 'cylinder_height': 10,
-                                 'profile': 'square',
-                                 'theta': self.screen_center[0]}
-
-        self.convenience_parameters = {'current_angle': current_angle}
-
-        self.meta_parameters = {'center_size': self.protocol_parameters['center_size'],
-                                'center': self.adjustCenter(self.protocol_parameters['center'])}
-
-    def getParameterDefaults(self):
-        self.protocol_parameters = {'period': 20.0,
-                                    'rate': 20.0,
-                                    'contrast': 1.0,
-                                    'mean': 0.5,
-                                    'angle': [0.0, 45.0, 90.0, 135.0, 180.0, 225.0, 270.0, 315.0],
-                                    'center': [0, 0],
-                                    'center_size': 180.0,
-                                    'randomize_order': True}
-
-    def getRunParameterDefaults(self):
-        self.run_parameters = {'protocol_ID': 'DriftingSquareGrating',
-                               'num_epochs': 40,
-                               'pre_time': 1.0,
-                               'stim_time': 4.0,
-                               'tail_time': 1.0,
-                               'idle_color': 0.5}
-
-
-class BTFgrating(BaseProtocol):
-    def __init__(self, cfg):
-        super().__init__(cfg)
-
-        self.getRunParameterDefaults()
-        self.getParameterDefaults()
-
-    def getEpochParameters(self):
-        current_rate = self.selectParametersFromLists(self.protocol_parameters['rate'],
-                                                       randomize_order=self.protocol_parameters['randomize_order'])
-
-        self.epoch_parameters = {'name': 'RotatingGrating',
-                                 'period': self.protocol_parameters['period'],
-                                 'rate': current_rate,
-                                 'color': [1, 1, 1, 1],
-                                 'mean': self.protocol_parameters['mean'],
-                                 'contrast': self.protocol_parameters['contrast'],
-                                 'angle': self.protocol_parameters['angle'],
-                                 'offset': 0.0,
-                                 'cylinder_radius': 1,
-                                 'cylinder_height': 10,
-                                 'profile': 'square',
-                                 'theta': self.screen_center[0]}
-
-        self.pre_epoch_parameters = {'name': 'RotatingGrating',
-                                 'period': self.protocol_parameters['period'],
-                                 'rate': 0,
-                                 'color': [1, 1, 1, 1],
-                                 'mean': self.protocol_parameters['mean'],
-                                 'contrast': self.protocol_parameters['contrast'],
-                                 'angle': self.protocol_parameters['angle'],
-                                 'offset': 0.0,
-                                 'cylinder_radius': 1,
-                                 'cylinder_height': 10,
-                                 'profile': 'square',
-                                 'theta': self.screen_center[0]}
-
-        self.convenience_parameters = {'current_rate': current_rate}
-
-        self.meta_parameters = {'center_size': self.protocol_parameters['center_size'],
-                                'center': self.adjustCenter(self.protocol_parameters['center'])}
-
-    def getParameterDefaults(self):
-        self.protocol_parameters = {'period': 20.0,
-                                    'rate': 20.0,
-                                    'contrast': 1.0,
-                                    'mean': 0.5,
-                                    'angle': 0.0,
-                                    'center': [0, 0],
-                                    'center_size': 180.0,
-                                    'randomize_order': True}
-
-    def getRunParameterDefaults(self):
-        self.run_parameters = {'protocol_ID': 'BTFgrating',
-                               'num_epochs': 40,
-                               'pre_time': 1.0,
-                               'stim_time': 4.0,
-                               'tail_time': 1.0,
-                               'idle_color': 0.5}
-
-    def loadStimuli(self, client):
-        # bypassing the load stim here because I loaded it in startStimuli
-        pass
-
-    def startStimuli(self, client, append_stim_frames=False, print_profile=True):
-        # pre time
-        bg = self.run_parameters.get('idle_color')
-        multicall = flyrpc.multicall.MyMultiCall(client.manager)
-        multicall.load_stim('ConstantBackground', color=[bg, bg, bg, 1.0])
-        stim = self.pre_epoch_parameters.copy()
-        multicall.load_stim(**stim, hold=True)
-        stim['cylinder_location'] = (.008, 0, 0)
-        stim['angle'] -= 180
-        multicall.load_stim(**stim, hold=True)
-        multicall()
-        multicall.start_stim(append_stim_frames=append_stim_frames)
-        multicall()
-        sleep(self.run_parameters['pre_time'])
-
-        # stim time
-        bg = self.run_parameters.get('idle_color')
-        multicall = flyrpc.multicall.MyMultiCall(client.manager)
-        multicall.load_stim('ConstantBackground', color=[bg, bg, bg, 1.0])
-        stim = self.epoch_parameters.copy()
-        multicall.load_stim(**stim, hold=True)
-        stim['cylinder_location'] = (.008, 0, 0)
-        stim['angle'] -= 180
-        multicall.load_stim(**stim, hold=True)
-        multicall()
-        multicall.start_stim(append_stim_frames=append_stim_frames)
-        multicall.start_corner_square()
-        multicall()
-        sleep(self.run_parameters['stim_time'])
-
-        # tail time
-        multicall = flyrpc.multicall.MyMultiCall(client.manager)
-        multicall.stop_stim(print_profile=print_profile)
-        multicall.black_corner_square()
-        multicall()
-
-        sleep(self.run_parameters['tail_time'])
 
 
 class LoomingSpot(BaseProtocol):
@@ -464,13 +312,13 @@ class LinearLoom(BaseProtocol):
         loom_speed = self.protocol_parameters['loom_speed']  # deg/sec
         current_loom_speed = self.selectParametersFromLists(loom_speed,
                                                             randomize_order=self.protocol_parameters['randomize_order'])
-        startR = (0, start_size/2)
-        final_r = start_size/2 + stim_time * current_loom_speed / 2
+        startR = (0, start_size / 2)
+        final_r = start_size / 2 + stim_time * current_loom_speed / 2
         if final_r < end_size / 2:
             endR = (stim_time, final_r)
             r = [startR, endR]
         else:
-            stop_time = (end_size - start_size)/current_loom_speed
+            stop_time = (end_size - start_size) / current_loom_speed
             middleR = (stop_time, end_size / 2)
             endR = (stim_time, end_size / 2)
             r = [startR, middleR, endR]
@@ -613,37 +461,122 @@ class LoomingSpotContrast(BaseProtocol):
                                'idle_color': 0.5}
 
 
-class MovingRectangle(BaseProtocol):
+class ExpandingRing(BaseProtocol):
     def __init__(self, cfg):
         super().__init__(cfg)
-
         self.getRunParameterDefaults()
         self.getParameterDefaults()
 
     def getEpochParameters(self):
-        current_intensity, current_angle = self.selectParametersFromLists(
-            (self.protocol_parameters['intensity'], self.protocol_parameters['angle']),
-            randomize_order=self.protocol_parameters['randomize_order'])
+        stim_time = self.run_parameters['stim_time']
+        start_size = self.protocol_parameters['start_size']
+        end_size = self.protocol_parameters['end_size']
 
-        self.epoch_parameters = self.getMovingPatchParameters(angle=current_angle, color=current_intensity)
+        # adjust center to screen center
+        adj_center = self.adjustCenter(self.protocol_parameters['center'])
 
-        self.convenience_parameters = {'current_angle': current_angle,
-                                       'current_intensity': current_intensity}
+        loom_speed = self.protocol_parameters['loom_speed']  # deg/sec
+        current_loom_speed = self.selectParametersFromLists(loom_speed,
+                                                            randomize_order=self.protocol_parameters['randomize_order'])
+        startR = (0, start_size / 2)
+        final_r = start_size / 2 + stim_time * current_loom_speed / 2
+        if final_r < end_size / 2:
+            endR = (stim_time, final_r)
+            r = [startR, endR]
+        else:
+            stop_time = np.abs(start_size - end_size) / current_loom_speed
+            middleR = (stop_time, end_size / 2)
+            endR = (stim_time, end_size / 2)
+            r = [startR, middleR, endR]
+
+        r_traj = {'name': 'tv_pairs',
+                  'tv_pairs': r,
+                  'kind': 'linear'}
+
+        self.epoch_parameters = self.getMovingRingParameters(color=self.protocol_parameters['intensity'],
+                                                             inner_radius=r_traj,
+                                                             thickness=self.protocol_parameters['thickness'],
+                                                             center=adj_center,
+                                                             speed=0,
+                                                             angle=0)
+
+        self.convenience_parameters = {'current_rv_ratio': current_loom_speed}
 
     def getParameterDefaults(self):
-        self.protocol_parameters = {'width': 5.0,
-                                    'height': 50.0,
-                                    'intensity': [0.0, 1.0],
+        self.protocol_parameters = {'intensity': 0.0,
                                     'center': [0, 0],
-                                    'speed': 80.0,
-                                    'angle': [0.0, 180.0],
+                                    'start_size': 0,
+                                    'end_size': 50,
+                                    'thickness': 10,
+                                    'loom_speed': [50.0, 100.0],
                                     'randomize_order': True}
 
     def getRunParameterDefaults(self):
-        self.run_parameters = {'protocol_ID': 'MovingRectangle',
-                               'num_epochs': 40,
+        self.run_parameters = {'protocol_ID': 'LinearExpandRing',
+                               'num_epochs': 75,
                                'pre_time': 0.5,
-                               'stim_time': 3.0,
+                               'stim_time': 1.0,
+                               'tail_time': 1.0,
+                               'idle_color': 0.5}
+
+
+class ClosingRing(BaseProtocol):
+    def __init__(self, cfg):
+        super().__init__(cfg)
+        self.getRunParameterDefaults()
+        self.getParameterDefaults()
+
+    def getEpochParameters(self):
+        stim_time = self.run_parameters['stim_time']
+        start_size = self.protocol_parameters['start_size']
+        end_size = self.protocol_parameters['end_size']
+
+        # adjust center to screen center
+        adj_center = self.adjustCenter(self.protocol_parameters['center'])
+
+        loom_speed = self.protocol_parameters['loom_speed']  # deg/sec
+        current_loom_speed = self.selectParametersFromLists(loom_speed,
+                                                            randomize_order=self.protocol_parameters['randomize_order'])
+        startR = (0, start_size / 2)
+        final_r = start_size / 2 + stim_time * current_loom_speed / 2
+        if final_r < end_size / 2:
+            endR = (stim_time, final_r)
+            r = [startR, endR]
+        else:
+            stop_time = np.abs(start_size - end_size) / current_loom_speed
+            middleR = (stop_time, end_size / 2)
+            endR = (stim_time, end_size / 2)
+            r = [startR, middleR, endR]
+        thickness = [(tv[0], start_size / 2 - tv[1]) for tv in r]
+        inner_r_traj = {'name': 'tv_pairs',
+                        'tv_pairs': r,
+                        'kind': 'linear'}
+        thickness_traj = {'name': 'tv_pairs',
+                          'tv_pairs': thickness,
+                          'kind': 'linear'}
+
+        self.epoch_parameters = self.getMovingRingParameters(color=self.protocol_parameters['intensity'],
+                                                             inner_radius=inner_r_traj,
+                                                             thickness=thickness_traj,
+                                                             center=adj_center,
+                                                             speed=0,
+                                                             angle=0)
+
+        self.convenience_parameters = {'current_rv_ratio': current_loom_speed}
+
+    def getParameterDefaults(self):
+        self.protocol_parameters = {'intensity': 0.0,
+                                    'center': [0, 0],
+                                    'start_size': 50,
+                                    'end_size': 0,
+                                    'loom_speed': [50.0],
+                                    'randomize_order': True}
+
+    def getRunParameterDefaults(self):
+        self.run_parameters = {'protocol_ID': 'LinearCloseRing',
+                               'num_epochs': 75,
+                               'pre_time': 0.5,
+                               'stim_time': 1.0,
                                'tail_time': 1.0,
                                'idle_color': 0.5}
 
@@ -743,148 +676,6 @@ class SurroundInhibition(BaseProtocol):
                                'idle_color': 0.5}
 
 
-class BTFflowLoom(BaseProtocol):
-    def __init__(self, cfg):
-        super().__init__(cfg)
-
-        self.getRunParameterDefaults()
-        self.getParameterDefaults()
-
-    def getEpochParameters(self):
-        current_loom = self.selectParametersFromLists(self.protocol_parameters['loom'],
-                                                      randomize_order=self.protocol_parameters['randomize_order'])
-        self.epoch_parameters = {'name': 'RotatingGrating',
-                                 'period': self.protocol_parameters['period'],
-                                 'rate': self.protocol_parameters['rate'],
-                                 'color': [1, 1, 1, 1],
-                                 'mean': self.protocol_parameters['mean'],
-                                 'contrast': self.protocol_parameters['contrast'],
-                                 'angle': self.protocol_parameters['angle'],
-                                 'offset': 0.0,
-                                 'cylinder_radius': 1,
-                                 'cylinder_height': 10,
-                                 'profile': 'square',
-                                 'theta': self.screen_center[0]}
-
-        self.pre_epoch_parameters = {'name': 'RotatingGrating',
-                                 'period': self.protocol_parameters['period'],
-                                 'rate': 0,
-                                 'color': [1, 1, 1, 1],
-                                 'mean': self.protocol_parameters['mean'],
-                                 'contrast': self.protocol_parameters['contrast'],
-                                 'angle': self.protocol_parameters['angle'],
-                                 'offset': 0.0,
-                                 'cylinder_radius': 1,
-                                 'cylinder_height': 10,
-                                 'profile': 'square',
-                                 'theta': self.screen_center[0]}
-
-        self.convenience_parameters = {'current_loom': current_loom}
-
-        self.meta_parameters = {'center_size': self.protocol_parameters['center_size'],
-                                'center': self.adjustCenter(self.protocol_parameters['center'])}
-
-        stim_time = self.run_parameters['stim_time']
-        start_size = self.protocol_parameters['start_size']
-        end_size = self.protocol_parameters['end_size']
-        # adjust center to screen center
-        adj_center = self.adjustCenter(self.protocol_parameters['center'])
-        rv_ratio = self.protocol_parameters['rv_ratio']  # msec
-        rv_ratio = rv_ratio / 1e3  # msec -> sec
-        r_traj = {'name': 'Loom',
-                  'rv_ratio': rv_ratio,
-                  'stim_time': stim_time,
-                  'start_size': start_size,
-                  'end_size': end_size}
-        self.loom_epoch_parameters = {'name': 'MovingSpot',
-                                      'loom': current_loom,
-                                     'radius': r_traj,
-                                     'sphere_radius': 1,
-                                     'color': self.protocol_parameters['intensity'],
-                                     'theta': adj_center[0],
-                                     'phi': adj_center[1]}
-
-    def getParameterDefaults(self):
-        self.protocol_parameters = {'period': 20.0,
-                                    'rate': 20.0,
-                                    'contrast': 1.0,
-                                    'mean': 0.5,
-                                    'angle': 0.0,
-                                    'loom': [0, 1],
-                                    'center': [0, 0],
-                                    'start_size': 5,
-                                    'end_size': 90,
-                                    'rv_ratio': 40,
-                                    'intensity': 0.0,
-                                    'center_size': 180.0,
-                                    'randomize_order': True}
-
-    def getRunParameterDefaults(self):
-        self.run_parameters = {'protocol_ID': 'BTFflowLoom',
-                               'num_epochs': 40,
-                               'pre_time': 1.0,
-                               'stim_time': 4.0,
-                               'tail_time': 1.0,
-                               'idle_color': 0.5}
-
-    def loadStimuli(self, client):
-        # bypassing the load stim here because I loaded it in startStimuli
-        pass
-
-    def startStimuli(self, client, append_stim_frames=False, print_profile=True):
-        # pre time
-        bg = self.run_parameters.get('idle_color')
-        multicall = flyrpc.multicall.MyMultiCall(client.manager)
-        multicall.load_stim('ConstantBackground', color=[bg, bg, bg, 1.0])
-        stim = self.pre_epoch_parameters.copy()
-        multicall.load_stim(**stim, hold=True)
-        stim['cylinder_location'] = (.008, 0, 0)
-        stim['angle'] -= 180
-        multicall.load_stim(**stim, hold=True)
-        multicall()
-        multicall.start_stim(append_stim_frames=append_stim_frames)
-        multicall()
-        sleep(self.run_parameters['pre_time'])
-
-        # stim time
-        bg = self.run_parameters.get('idle_color')
-        multicall = flyrpc.multicall.MyMultiCall(client.manager)
-        multicall.load_stim('ConstantBackground', color=[bg, bg, bg, 1.0])
-        loom_stim = self.loom_epoch_parameters.copy()
-        if loom_stim['loom']:
-            loom_stim.pop('loom')
-            multicall.load_stim(**loom_stim, hold=True)
-        stim = self.epoch_parameters.copy()
-        multicall.load_stim(**stim, hold=True)
-        stim['cylinder_location'] = (.008, 0, 0)
-        stim['angle'] -= 180
-        multicall.load_stim(**stim, hold=True)
-        multicall()
-        multicall.start_stim(append_stim_frames=append_stim_frames)
-        multicall.start_corner_square()
-        multicall()
-        sleep(self.run_parameters['stim_time'])
-
-        # tail time
-        multicall = flyrpc.multicall.MyMultiCall(client.manager)
-        multicall.stop_stim(print_profile=print_profile)
-        multicall.black_corner_square()
-        multicall()
-
-        sleep(self.run_parameters['tail_time'])
-
-
-def get_loom_size(rv_ratio, start_size, end_size, t):
-    # calculate angular size at t
-    d0 = rv_ratio / np.tan(np.deg2rad(start_size / 2))
-    angular_size = 2 * \
-                   np.rad2deg(np.arctan(rv_ratio * (1 / (d0 - t))))
-    # Cap the curve at end_size and have it just hang there
-    if angular_size > end_size or d0 <= t:
-        angular_size = end_size
-    return angular_size / 2
-
-
 class SpotSeries(BaseProtocol):
     def __init__(self, cfg):
         super().__init__(cfg)
@@ -960,6 +751,7 @@ class DiskFlash(BaseProtocol):
         time_points2.append(stim_time)
         for t, t2 in zip(time_points, time_points2):
             color_tv_pairs.append((t, disk_color))
+            color_tv_pairs.append((t + pulse_duration, disk_color))
             color_tv_pairs.append((t + pulse_duration, bg_color))
             color_tv_pairs.append((t2, bg_color))
 
@@ -1069,6 +861,40 @@ class StillRings(BaseProtocol):
                                'idle_color': 0.5}
 
 
+class MovingRectangle(BaseProtocol):
+    def __init__(self, cfg):
+        super().__init__(cfg)
+
+        self.getRunParameterDefaults()
+        self.getParameterDefaults()
+
+    def getEpochParameters(self):
+        current_intensity, current_angle = self.selectParametersFromLists(
+            (self.protocol_parameters['intensity'], self.protocol_parameters['angle']),
+            randomize_order=self.protocol_parameters['randomize_order'])
+
+        self.epoch_parameters = self.getMovingPatchParameters(angle=current_angle, color=current_intensity)
+
+        self.convenience_parameters = {'current_angle': current_angle,
+                                       'current_intensity': current_intensity}
+
+    def getParameterDefaults(self):
+        self.protocol_parameters = {'width': 5.0,
+                                    'height': 50.0,
+                                    'intensity': [0.0, 1.0],
+                                    'center': [0, 0],
+                                    'speed': 80.0,
+                                    'angle': [0.0, 180.0],
+                                    'randomize_order': True}
+
+    def getRunParameterDefaults(self):
+        self.run_parameters = {'protocol_ID': 'MovingRectangle',
+                               'num_epochs': 40,
+                               'pre_time': 0.5,
+                               'stim_time': 3.0,
+                               'tail_time': 1.0,
+                               'idle_color': 0.5}
+
 
 class UniformFlash(BaseProtocol):
     def __init__(self, cfg):
@@ -1107,6 +933,300 @@ class UniformFlash(BaseProtocol):
                                'stim_time': 0.5,
                                'tail_time': 1.0,
                                'idle_color': 0.5}
+
+
+class DriftingSquareGrating(BaseProtocol):
+    def __init__(self, cfg):
+        super().__init__(cfg)
+
+        self.getRunParameterDefaults()
+        self.getParameterDefaults()
+
+    def getEpochParameters(self):
+        # TODO: center size with aperture (center and center_size)
+        current_angle = self.selectParametersFromLists(self.protocol_parameters['angle'],
+                                                       randomize_order=self.protocol_parameters['randomize_order'])
+
+        self.epoch_parameters = {'name': 'RotatingGrating',
+                                 'period': self.protocol_parameters['period'],
+                                 'rate': self.protocol_parameters['rate'],
+                                 'color': [1, 1, 1, 1],
+                                 'mean': self.protocol_parameters['mean'],
+                                 'contrast': self.protocol_parameters['contrast'],
+                                 'angle': current_angle,
+                                 'offset': 0.0,
+                                 'cylinder_radius': 1,
+                                 'cylinder_height': 10,
+                                 'profile': 'square',
+                                 'theta': self.screen_center[0]}
+
+        self.convenience_parameters = {'current_angle': current_angle}
+
+        self.meta_parameters = {'center_size': self.protocol_parameters['center_size'],
+                                'center': self.adjustCenter(self.protocol_parameters['center'])}
+
+    def getParameterDefaults(self):
+        self.protocol_parameters = {'period': 20.0,
+                                    'rate': 20.0,
+                                    'contrast': 1.0,
+                                    'mean': 0.5,
+                                    'angle': [0.0, 45.0, 90.0, 135.0, 180.0, 225.0, 270.0, 315.0],
+                                    'center': [0, 0],
+                                    'center_size': 180.0,
+                                    'randomize_order': True}
+
+    def getRunParameterDefaults(self):
+        self.run_parameters = {'protocol_ID': 'DriftingSquareGrating',
+                               'num_epochs': 40,
+                               'pre_time': 1.0,
+                               'stim_time': 4.0,
+                               'tail_time': 1.0,
+                               'idle_color': 0.5}
+
+
+class BTFgrating(BaseProtocol):
+    def __init__(self, cfg):
+        super().__init__(cfg)
+
+        self.getRunParameterDefaults()
+        self.getParameterDefaults()
+
+    def getEpochParameters(self):
+        current_rate = self.selectParametersFromLists(self.protocol_parameters['rate'],
+                                                      randomize_order=self.protocol_parameters['randomize_order'])
+
+        self.epoch_parameters = {'name': 'RotatingGrating',
+                                 'period': self.protocol_parameters['period'],
+                                 'rate': current_rate,
+                                 'color': [1, 1, 1, 1],
+                                 'mean': self.protocol_parameters['mean'],
+                                 'contrast': self.protocol_parameters['contrast'],
+                                 'angle': self.protocol_parameters['angle'],
+                                 'offset': 0.0,
+                                 'cylinder_radius': 1,
+                                 'cylinder_height': 10,
+                                 'profile': 'square',
+                                 'theta': self.screen_center[0]}
+
+        self.pre_epoch_parameters = {'name': 'RotatingGrating',
+                                     'period': self.protocol_parameters['period'],
+                                     'rate': 0,
+                                     'color': [1, 1, 1, 1],
+                                     'mean': self.protocol_parameters['mean'],
+                                     'contrast': self.protocol_parameters['contrast'],
+                                     'angle': self.protocol_parameters['angle'],
+                                     'offset': 0.0,
+                                     'cylinder_radius': 1,
+                                     'cylinder_height': 10,
+                                     'profile': 'square',
+                                     'theta': self.screen_center[0]}
+
+        self.convenience_parameters = {'current_rate': current_rate}
+
+        self.meta_parameters = {'center_size': self.protocol_parameters['center_size'],
+                                'center': self.adjustCenter(self.protocol_parameters['center'])}
+
+    def getParameterDefaults(self):
+        self.protocol_parameters = {'period': 20.0,
+                                    'rate': 20.0,
+                                    'contrast': 1.0,
+                                    'mean': 0.5,
+                                    'angle': 0.0,
+                                    'center': [0, 0],
+                                    'center_size': 180.0,
+                                    'randomize_order': True}
+
+    def getRunParameterDefaults(self):
+        self.run_parameters = {'protocol_ID': 'BTFgrating',
+                               'num_epochs': 40,
+                               'pre_time': 1.0,
+                               'stim_time': 4.0,
+                               'tail_time': 1.0,
+                               'idle_color': 0.5}
+
+    def loadStimuli(self, client):
+        # bypassing the load stim here because I loaded it in startStimuli
+        pass
+
+    def startStimuli(self, client, append_stim_frames=False, print_profile=True):
+        # pre time
+        bg = self.run_parameters.get('idle_color')
+        multicall = flyrpc.multicall.MyMultiCall(client.manager)
+        multicall.load_stim('ConstantBackground', color=[bg, bg, bg, 1.0])
+        stim = self.pre_epoch_parameters.copy()
+        multicall.load_stim(**stim, hold=True)
+        stim['cylinder_location'] = (.008, 0, 0)
+        stim['angle'] -= 180
+        multicall.load_stim(**stim, hold=True)
+        multicall()
+        multicall.start_stim(append_stim_frames=append_stim_frames)
+        multicall()
+        sleep(self.run_parameters['pre_time'])
+
+        # stim time
+        bg = self.run_parameters.get('idle_color')
+        multicall = flyrpc.multicall.MyMultiCall(client.manager)
+        multicall.load_stim('ConstantBackground', color=[bg, bg, bg, 1.0])
+        stim = self.epoch_parameters.copy()
+        multicall.load_stim(**stim, hold=True)
+        stim['cylinder_location'] = (.008, 0, 0)
+        stim['angle'] -= 180
+        multicall.load_stim(**stim, hold=True)
+        multicall()
+        multicall.start_stim(append_stim_frames=append_stim_frames)
+        multicall.start_corner_square()
+        multicall()
+        sleep(self.run_parameters['stim_time'])
+
+        # tail time
+        multicall = flyrpc.multicall.MyMultiCall(client.manager)
+        multicall.stop_stim(print_profile=print_profile)
+        multicall.black_corner_square()
+        multicall()
+
+        sleep(self.run_parameters['tail_time'])
+
+
+class BTFflowLoom(BaseProtocol):
+    def __init__(self, cfg):
+        super().__init__(cfg)
+
+        self.getRunParameterDefaults()
+        self.getParameterDefaults()
+
+    def getEpochParameters(self):
+        current_loom = self.selectParametersFromLists(self.protocol_parameters['loom'],
+                                                      randomize_order=self.protocol_parameters['randomize_order'])
+        self.epoch_parameters = {'name': 'RotatingGrating',
+                                 'period': self.protocol_parameters['period'],
+                                 'rate': self.protocol_parameters['rate'],
+                                 'color': [1, 1, 1, 1],
+                                 'mean': self.protocol_parameters['mean'],
+                                 'contrast': self.protocol_parameters['contrast'],
+                                 'angle': self.protocol_parameters['angle'],
+                                 'offset': 0.0,
+                                 'cylinder_radius': 1,
+                                 'cylinder_height': 10,
+                                 'profile': 'square',
+                                 'theta': self.screen_center[0]}
+
+        self.pre_epoch_parameters = {'name': 'RotatingGrating',
+                                     'period': self.protocol_parameters['period'],
+                                     'rate': 0,
+                                     'color': [1, 1, 1, 1],
+                                     'mean': self.protocol_parameters['mean'],
+                                     'contrast': self.protocol_parameters['contrast'],
+                                     'angle': self.protocol_parameters['angle'],
+                                     'offset': 0.0,
+                                     'cylinder_radius': 1,
+                                     'cylinder_height': 10,
+                                     'profile': 'square',
+                                     'theta': self.screen_center[0]}
+
+        self.convenience_parameters = {'current_loom': current_loom}
+
+        self.meta_parameters = {'center_size': self.protocol_parameters['center_size'],
+                                'center': self.adjustCenter(self.protocol_parameters['center'])}
+
+        stim_time = self.run_parameters['stim_time']
+        start_size = self.protocol_parameters['start_size']
+        end_size = self.protocol_parameters['end_size']
+        # adjust center to screen center
+        adj_center = self.adjustCenter(self.protocol_parameters['center'])
+        rv_ratio = self.protocol_parameters['rv_ratio']  # msec
+        rv_ratio = rv_ratio / 1e3  # msec -> sec
+        r_traj = {'name': 'Loom',
+                  'rv_ratio': rv_ratio,
+                  'stim_time': stim_time,
+                  'start_size': start_size,
+                  'end_size': end_size}
+        self.loom_epoch_parameters = {'name': 'MovingSpot',
+                                      'loom': current_loom,
+                                      'radius': r_traj,
+                                      'sphere_radius': 1,
+                                      'color': self.protocol_parameters['intensity'],
+                                      'theta': adj_center[0],
+                                      'phi': adj_center[1]}
+
+    def getParameterDefaults(self):
+        self.protocol_parameters = {'period': 20.0,
+                                    'rate': 20.0,
+                                    'contrast': 1.0,
+                                    'mean': 0.5,
+                                    'angle': 0.0,
+                                    'loom': [0, 1],
+                                    'center': [0, 0],
+                                    'start_size': 5,
+                                    'end_size': 90,
+                                    'rv_ratio': 40,
+                                    'intensity': 0.0,
+                                    'center_size': 180.0,
+                                    'randomize_order': True}
+
+    def getRunParameterDefaults(self):
+        self.run_parameters = {'protocol_ID': 'BTFflowLoom',
+                               'num_epochs': 40,
+                               'pre_time': 1.0,
+                               'stim_time': 4.0,
+                               'tail_time': 1.0,
+                               'idle_color': 0.5}
+
+    def loadStimuli(self, client):
+        # bypassing the load stim here because I loaded it in startStimuli
+        pass
+
+    def startStimuli(self, client, append_stim_frames=False, print_profile=True):
+        # pre time
+        bg = self.run_parameters.get('idle_color')
+        multicall = flyrpc.multicall.MyMultiCall(client.manager)
+        multicall.load_stim('ConstantBackground', color=[bg, bg, bg, 1.0])
+        stim = self.pre_epoch_parameters.copy()
+        multicall.load_stim(**stim, hold=True)
+        stim['cylinder_location'] = (.008, 0, 0)
+        stim['angle'] -= 180
+        multicall.load_stim(**stim, hold=True)
+        multicall()
+        multicall.start_stim(append_stim_frames=append_stim_frames)
+        multicall()
+        sleep(self.run_parameters['pre_time'])
+
+        # stim time
+        bg = self.run_parameters.get('idle_color')
+        multicall = flyrpc.multicall.MyMultiCall(client.manager)
+        multicall.load_stim('ConstantBackground', color=[bg, bg, bg, 1.0])
+        loom_stim = self.loom_epoch_parameters.copy()
+        if loom_stim['loom']:
+            loom_stim.pop('loom')
+            multicall.load_stim(**loom_stim, hold=True)
+        stim = self.epoch_parameters.copy()
+        multicall.load_stim(**stim, hold=True)
+        stim['cylinder_location'] = (.008, 0, 0)
+        stim['angle'] -= 180
+        multicall.load_stim(**stim, hold=True)
+        multicall()
+        multicall.start_stim(append_stim_frames=append_stim_frames)
+        multicall.start_corner_square()
+        multicall()
+        sleep(self.run_parameters['stim_time'])
+
+        # tail time
+        multicall = flyrpc.multicall.MyMultiCall(client.manager)
+        multicall.stop_stim(print_profile=print_profile)
+        multicall.black_corner_square()
+        multicall()
+
+        sleep(self.run_parameters['tail_time'])
+
+
+def get_loom_size(rv_ratio, start_size, end_size, t):
+    # calculate angular size at t
+    d0 = rv_ratio / np.tan(np.deg2rad(start_size / 2))
+    angular_size = 2 * \
+                   np.rad2deg(np.arctan(rv_ratio * (1 / (d0 - t))))
+    # Cap the curve at end_size and have it just hang there
+    if angular_size > end_size or d0 <= t:
+        angular_size = end_size
+    return angular_size / 2
 
 
 class PanGlomSuite(BaseProtocol):

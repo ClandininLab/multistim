@@ -233,6 +233,33 @@ def get_roi_mean(ID: ImagingDataObject, condition_number=2, run_para_key=None):
     return relative_time, res_dict
 
 
+def get_roi_response(ID: ImagingDataObject, condition_number=2, run_para_key=None, roi='bg'):
+    epoch_parameters = ID.getEpochParameters()
+    roi_set_names = ID.getRoiSetNames()
+    if 'bg' not in roi_set_names:
+        return
+    elif len(roi_set_names) < 3:
+        return
+    roi_set_names.remove('bg')
+
+    condition = [k for k in epoch_parameters[0].keys() if 'current' in k][:condition_number]
+    stims, type2ind = getStimulusTypes(ID, condition, run_para_key)
+    para_set = list(type2ind.keys())
+    res_dict = {para:[] for para in para_set}
+
+    roi_data = ID.getRoiResponses(roi, background_subtraction=True)
+    type2ind, ensemble, relative_time = get_responses_per_condition(ID, roi_data, para_key=condition, run_para_key=run_para_key)
+    if len(para_set) > 1:
+        for p_ind, para in enumerate(para_set):
+            res = ensemble[type2ind[para]]
+            res_dict[para].append(np.mean(res, axis=0))
+    else:
+        type2ind, ensemble, relative_time = get_responses_per_condition(ID, roi_data, para_key=condition, run_para_key=run_para_key)
+        res = ensemble[0]
+        res_dict[para_set[0]].append(np.mean(res, axis=0))
+    return relative_time, res_dict
+
+
 def summary_figure(ID: ImagingDataObject, condition_number=2, figure_size=(4, 4), ylim=None, condition=None,
                    save_dir=None, run_para_key=None):
     if ylim is None:
