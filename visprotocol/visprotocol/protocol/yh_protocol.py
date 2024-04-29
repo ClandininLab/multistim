@@ -75,13 +75,11 @@ class BaseProtocol(clandinin_protocol.BaseProtocol):
 
     def getMovingSpotParameters(self, center=None, angle=None, speed=None, radius=None, color=None,
                                 distance_to_travel=None):
-        if center is None: center = self.protocol_parameters['center']
+        if center is None: center = self.adjustCenter(self.protocol_parameters['center'])
         if angle is None: angle = self.protocol_parameters['angle']
         if speed is None: speed = self.protocol_parameters['speed']
         if radius is None: radius = self.protocol_parameters['radius']
         if color is None: color = self.protocol_parameters['color']
-
-        center = self.adjustCenter(center)
 
         centerX = center[0]
         centerY = center[1]
@@ -600,7 +598,8 @@ class SurroundInhibition(BaseProtocol):
         current_diameter = current_paras[1]
         current_inhibit_time = current_paras[2]
 
-        center = self.protocol_parameters['center']
+        # adjust center to screen center
+        adj_center = self.adjustCenter(self.protocol_parameters['center'])
         bg_color = self.run_parameters.get('idle_color')
         surround_color = self.protocol_parameters['intensity']
         stim_time = self.run_parameters['stim_time']
@@ -612,7 +611,7 @@ class SurroundInhibition(BaseProtocol):
         ring_parameters = self.getMovingRingParameters(color=color_traj,
                                                        inner_radius=current_diameter / 2,
                                                        thickness=current_thickness,
-                                                       center=center,
+                                                       center=adj_center,
                                                        speed=0,
                                                        angle=0)
 
