@@ -132,14 +132,12 @@ class BaseProtocol(clandinin_protocol.BaseProtocol):
 
     def getMovingRingParameters(self, center=None, angle=None, speed=None, inner_radius=None, thickness=None,
                                 color=None, distance_to_travel=None):
-        if center is None: center = self.protocol_parameters['center']
+        if center is None: center = self.adjustCenter(self.protocol_parameters['center'])
         if angle is None: angle = self.protocol_parameters['angle']
         if speed is None: speed = self.protocol_parameters['speed']
         if inner_radius is None: inner_radius = self.protocol_parameters['inner_radius']
         if thickness is None: thickness = self.protocol_parameters['thickness']
         if color is None: color = self.protocol_parameters['color']
-
-        center = self.adjustCenter(center)
 
         centerX = center[0]
         centerY = center[1]
