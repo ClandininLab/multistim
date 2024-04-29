@@ -870,14 +870,10 @@ class ExpandingRectangle(BaseProtocol):
 
     def getEpochParameters(self):
         angle = self.protocol_parameters['angle']
-        print(angle)
         current_angle = self.selectParametersFromLists(angle, randomize_order=self.protocol_parameters['randomize_order'])
-        print(current_angle)
-
         stim_time = self.run_parameters['stim_time']
         start_size = self.protocol_parameters['start_size']
         end_size = self.protocol_parameters['end_size']
-
         # adjust center to screen center
         adj_center = self.adjustCenter(self.protocol_parameters['center'])
 
