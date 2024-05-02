@@ -858,6 +858,54 @@ class StillRings(BaseProtocol):
                                'idle_color': 0.5}
 
 
+class OffcenterDisk(BaseProtocol):
+    def __init__(self, cfg):
+        super().__init__(cfg)
+
+        self.getRunParameterDefaults()
+        self.getParameterDefaults()
+
+    def getEpochParameters(self):
+        stim_time = self.run_parameters['stim_time']
+        offset = self.protocol_parameters['offset']
+        direction = self.protocol_parameters['direction']  # in degrees
+        current_offset, current_direction = self.selectParametersFromLists((offset, direction), all_combinations=True,
+                                                                            randomize_order=self.protocol_parameters['randomize_order'])
+        current_direction = np.radians(current_direction)  # convert to radians
+        RFcenter = self.protocol_parameters['center']
+        current_center = RFcenter.copy()
+        current_center[0] = RFcenter[0] + current_offset * np.cos(current_direction)
+        current_center[1] = RFcenter[1] + current_offset * np.sin(current_direction)
+        # adjust center to screen center
+        adj_center = self.adjustCenter(current_center)
+        radius = self.protocol_parameters['radius']
+        self.epoch_parameters = {'name': 'MovingSpot',
+                                 'radius': radius,
+                                 'sphere_radius': 1,
+                                 'color': self.protocol_parameters['intensity'],
+                                 'theta': adj_center[0],
+                                 'phi': adj_center[1]}
+
+        self.convenience_parameters = {'current_offset': current_offset,
+                                      'current_direction': current_direction}
+
+    def getParameterDefaults(self):
+        self.protocol_parameters = {'intensity': 0.0,
+                                    'center': [0, 0],
+                                    'radius': 5,
+                                    'offset': [5, 10, 20, 30],
+                                    'direction': [0],
+                                    'randomize_order': True}
+
+    def getRunParameterDefaults(self):
+        self.run_parameters = {'protocol_ID': 'OffcenterDisk',
+                               'num_epochs': 75,
+                               'pre_time': 0.5,
+                               'stim_time': 1.0,
+                               'tail_time': 1.0,
+                               'idle_color': 0.5}
+
+
 class ExpandingRectangle(BaseProtocol):
     def __init__(self, cfg):
         super().__init__(cfg)
