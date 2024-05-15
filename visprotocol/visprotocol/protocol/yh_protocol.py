@@ -73,6 +73,41 @@ class BaseProtocol(clandinin_protocol.BaseProtocol):
                             'angle': angle}
         return patch_parameters
 
+    def getExpandingPatchParameters(self, center=None, angle=None, speed=None, width=None, height=None, color=None):
+        if center is None: center = self.adjustCenter(self.protocol_parameters['center'])
+        if angle is None: angle = self.protocol_parameters['angle']
+        if speed is None: speed = self.protocol_parameters['speed']
+        if width is None: width = self.protocol_parameters['width']
+        if height is None: height = self.protocol_parameters['height']
+        if color is None: color = self.protocol_parameters['color']
+
+        centerX = center[0]
+        centerY = center[1]
+        stim_time = self.run_parameters['stim_time']
+        x = []
+        y = []
+        for tv_pair in height['tv_pairs']:
+            x_tv = (tv_pair[0], centerX + np.cos(np.radians(angle+90)) * tv_pair[1] / 2)
+            y_tv = (tv_pair[0], centerY + np.sin(np.radians(angle+90)) * tv_pair[1] / 2)
+            x.append(x_tv)
+            y.append(y_tv)
+
+        x_trajectory = {'name': 'tv_pairs',
+                        'tv_pairs': x,
+                        'kind': 'linear'}
+        y_trajectory = {'name': 'tv_pairs',
+                        'tv_pairs': y,
+                        'kind': 'linear'}
+
+        patch_parameters = {'name': 'MovingPatch',
+                            'width': width,
+                            'height': height,
+                            'color': color,
+                            'theta': x_trajectory,
+                            'phi': y_trajectory,
+                            'angle': angle}
+        return patch_parameters
+
     def getMovingSpotParameters(self, center=None, angle=None, speed=None, radius=None, color=None,
                                 distance_to_travel=None):
         if center is None: center = self.adjustCenter(self.protocol_parameters['center'])
@@ -953,6 +988,64 @@ class OffcenterGrid(BaseProtocol):
                                'idle_color': 0.5}
 
 
+# class ExpandingRectangle(BaseProtocol):
+#     def __init__(self, cfg):
+#         super().__init__(cfg)
+#
+#         self.getRunParameterDefaults()
+#         self.getParameterDefaults()
+#
+#     def getEpochParameters(self):
+#         angle = self.protocol_parameters['angle']
+#         current_angle = self.selectParametersFromLists(angle, randomize_order=self.protocol_parameters['randomize_order'])
+#         stim_time = self.run_parameters['stim_time']
+#         start_size = self.protocol_parameters['start_size']
+#         end_size = self.protocol_parameters['end_size']
+#         # adjust center to screen center
+#         adj_center = self.adjustCenter(self.protocol_parameters['center'])
+#
+#         loom_speed = self.protocol_parameters['speed']  # deg/sec
+#         startR = (0, start_size)
+#         final_r = start_size + stim_time * loom_speed
+#         if final_r < end_size:
+#             endR = (stim_time, final_r)
+#             r = [startR, endR]
+#         else:
+#             stop_time = np.abs(start_size - end_size) / loom_speed
+#             middleR = (stop_time, end_size)
+#             endR = (stim_time, end_size)
+#             r = [startR, middleR, endR]
+#
+#         h_traj = {'name': 'tv_pairs',
+#                   'tv_pairs': r,
+#                   'kind': 'linear'}
+#         self.epoch_parameters = self.getMovingPatchParameters(center=adj_center,
+#                                                               angle=current_angle,
+#                                                               height=h_traj,
+#                                                               speed=0,
+#                                                               color=self.protocol_parameters['intensity'])
+#
+#         self.convenience_parameters = {'current_angle': current_angle}
+#
+#     def getParameterDefaults(self):
+#         self.protocol_parameters = {'width': 5.0,
+#                                     'start_size': 5.0,
+#                                     'end_size': 100.0,
+#                                     'intensity': 0.0,
+#                                     'center': [0, 0],
+#                                     'speed': 80.0,
+#                                     'angle': [0.0, 90.0],
+#                                     'randomize_order': True}
+#
+#     def getRunParameterDefaults(self):
+#         self.run_parameters = {'protocol_ID': 'ExpandingRectangle',
+#                                'num_epochs': 40,
+#                                'pre_time': 0.5,
+#                                'stim_time': 3.0,
+#                                'tail_time': 1.0,
+#                                'idle_color': 0.5}
+
+
 class ExpandingRectangle(BaseProtocol):
     def __init__(self, cfg):
         super().__init__(cfg)
@@ -964,19 +1057,19 @@ class ExpandingRectangle(BaseProtocol):
         angle = self.protocol_parameters['angle']
         current_angle = self.selectParametersFromLists(angle, randomize_order=self.protocol_parameters['randomize_order'])
         stim_time = self.run_parameters['stim_time']
-        start_size = self.protocol_parameters['start_size']
+        start_size = 0.0
         end_size = self.protocol_parameters['end_size']
         # adjust center to screen center
         adj_center = self.adjustCenter(self.protocol_parameters['center'])
 
-        loom_speed = self.protocol_parameters['speed']  # deg/sec
+        speed = self.protocol_parameters['speed']  # deg/sec
         startR = (0, start_size)
-        final_r = start_size + stim_time * loom_speed
+        final_r = start_size + stim_time * speed
         if final_r < end_size:
             endR = (stim_time, final_r)
             r = [startR, endR]
         else:
-            stop_time = np.abs(start_size - end_size) / loom_speed
+            stop_time = np.abs(start_size - end_size) / speed
             middleR = (stop_time, end_size)
             endR = (stim_time, end_size)
             r = [startR, middleR, endR]
@@ -984,21 +1077,20 @@ class ExpandingRectangle(BaseProtocol):
         h_traj = {'name': 'tv_pairs',
                   'tv_pairs': r,
                   'kind': 'linear'}
-        self.epoch_parameters = self.getMovingPatchParameters(center=adj_center,
-                                                              angle=current_angle,
-                                                              height=h_traj,
-                                                              speed=0,
-                                                              color=self.protocol_parameters['intensity'])
+        self.epoch_parameters = self.getExpandingPatchParameters(center=adj_center,
+                                                                 angle=current_angle,
+                                                                 height=h_traj,
+                                                                 speed=0,
+                                                                 color=self.protocol_parameters['intensity'])
 
         self.convenience_parameters = {'current_angle': current_angle}
 
     def getParameterDefaults(self):
         self.protocol_parameters = {'width': 5.0,
-                                    'start_size': 5.0,
-                                    'end_size': 100.0,
+                                    'end_size': 20.0,
                                     'intensity': 0.0,
                                     'center': [0, 0],
-                                    'speed': 80.0,
+                                    'speed': 100.0,
                                     'angle': [0.0, 90.0],
                                     'randomize_order': True}
 
@@ -1006,7 +1098,7 @@ class ExpandingRectangle(BaseProtocol):
         self.run_parameters = {'protocol_ID': 'ExpandingRectangle',
                                'num_epochs': 40,
                                'pre_time': 0.5,
-                               'stim_time': 3.0,
+                               'stim_time': 0.3,
                                'tail_time': 1.0,
                                'idle_color': 0.5}
 
