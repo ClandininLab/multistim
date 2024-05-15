@@ -906,6 +906,53 @@ class OffcenterDisk(BaseProtocol):
                                'idle_color': 0.5}
 
 
+class OffcenterGrid(BaseProtocol):
+    def __init__(self, cfg):
+        super().__init__(cfg)
+
+        self.getRunParameterDefaults()
+        self.getParameterDefaults()
+
+    def getEpochParameters(self):
+        stim_time = self.run_parameters['stim_time']
+        theta = self.protocol_parameters['theta']
+        phi = self.protocol_parameters['phi']
+        current_offset = self.selectParametersFromLists((theta, phi), all_combinations=True,
+                                                        randomize_order=self.protocol_parameters['randomize_order'])
+        RFcenter = self.protocol_parameters['center']
+        current_center = RFcenter.copy()
+        current_center[0] = RFcenter[0] + current_offset[0]
+        current_center[1] = RFcenter[1] + current_offset[1]
+        # adjust center to screen center
+        adj_center = self.adjustCenter(current_center)
+        radius = self.protocol_parameters['radius']
+        self.epoch_parameters = {'name': 'MovingSpot',
+                                 'radius': radius,
+                                 'sphere_radius': 1,
+                                 'color': self.protocol_parameters['intensity'],
+                                 'theta': adj_center[0],
+                                 'phi': adj_center[1]}
+
+        self.convenience_parameters = {'current_theta': current_offset[0],
+                                      'current_phi': current_offset[1]}
+
+    def getParameterDefaults(self):
+        self.protocol_parameters = {'intensity': 0.0,
+                                    'center': [0, 0],
+                                    'radius': 5,
+                                    'theta': [-20, -15, -10, -5, 0, 5, 10, 15, 20],
+                                    'phi': [-20, -15, -10, -5, 0, 5, 10, 15, 20],
+                                    'randomize_order': True}
+
+    def getRunParameterDefaults(self):
+        self.run_parameters = {'protocol_ID': 'OffcenterGrid',
+                               'num_epochs': 81,
+                               'pre_time': 0.5,
+                               'stim_time': 0.2,
+                               'tail_time': 0.5,
+                               'idle_color': 0.5}
+
+
 class ExpandingRectangle(BaseProtocol):
     def __init__(self, cfg):
         super().__init__(cfg)
