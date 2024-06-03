@@ -893,52 +893,52 @@ class StillRings(BaseProtocol):
                                'idle_color': 0.5}
 
 
-class OffcenterDisk(BaseProtocol):
-    def __init__(self, cfg):
-        super().__init__(cfg)
-
-        self.getRunParameterDefaults()
-        self.getParameterDefaults()
-
-    def getEpochParameters(self):
-        stim_time = self.run_parameters['stim_time']
-        offset = self.protocol_parameters['offset']
-        direction = self.protocol_parameters['direction']  # in degrees
-        current_offset, current_direction = self.selectParametersFromLists((offset, direction), all_combinations=True,
-                                                                            randomize_order=self.protocol_parameters['randomize_order'])
-        current_direction = np.radians(current_direction)  # convert to radians
-        RFcenter = self.protocol_parameters['center']
-        current_center = RFcenter.copy()
-        current_center[0] = RFcenter[0] + current_offset * np.cos(current_direction)
-        current_center[1] = RFcenter[1] + current_offset * np.sin(current_direction)
-        # adjust center to screen center
-        adj_center = self.adjustCenter(current_center)
-        radius = self.protocol_parameters['radius']
-        self.epoch_parameters = {'name': 'MovingSpot',
-                                 'radius': radius,
-                                 'sphere_radius': 1,
-                                 'color': self.protocol_parameters['intensity'],
-                                 'theta': adj_center[0],
-                                 'phi': adj_center[1]}
-
-        self.convenience_parameters = {'current_offset': current_offset,
-                                      'current_direction': current_direction}
-
-    def getParameterDefaults(self):
-        self.protocol_parameters = {'intensity': 0.0,
-                                    'center': [0, 0],
-                                    'radius': 5,
-                                    'offset': [5, 10, 20, 30],
-                                    'direction': [0],
-                                    'randomize_order': True}
-
-    def getRunParameterDefaults(self):
-        self.run_parameters = {'protocol_ID': 'OffcenterDisk',
-                               'num_epochs': 75,
-                               'pre_time': 0.5,
-                               'stim_time': 1.0,
-                               'tail_time': 1.0,
-                               'idle_color': 0.5}
+# class OffcenterDisk(BaseProtocol):
+#     def __init__(self, cfg):
+#         super().__init__(cfg)
+#
+#         self.getRunParameterDefaults()
+#         self.getParameterDefaults()
+#
+#     def getEpochParameters(self):
+#         stim_time = self.run_parameters['stim_time']
+#         offset = self.protocol_parameters['offset']
+#         direction = self.protocol_parameters['direction']  # in degrees
+#         current_offset, current_direction = self.selectParametersFromLists((offset, direction), all_combinations=True,
+#                                                                             randomize_order=self.protocol_parameters['randomize_order'])
+#         current_direction = np.radians(current_direction)  # convert to radians
+#         RFcenter = self.protocol_parameters['center']
+#         current_center = RFcenter.copy()
+#         current_center[0] = RFcenter[0] + current_offset * np.cos(current_direction)
+#         current_center[1] = RFcenter[1] + current_offset * np.sin(current_direction)
+#         # adjust center to screen center
+#         adj_center = self.adjustCenter(current_center)
+#         radius = self.protocol_parameters['radius']
+#         self.epoch_parameters = {'name': 'MovingSpot',
+#                                  'radius': radius,
+#                                  'sphere_radius': 1,
+#                                  'color': self.protocol_parameters['intensity'],
+#                                  'theta': adj_center[0],
+#                                  'phi': adj_center[1]}
+#
+#         self.convenience_parameters = {'current_offset': current_offset,
+#                                       'current_direction': current_direction}
+#
+#     def getParameterDefaults(self):
+#         self.protocol_parameters = {'intensity': 0.0,
+#                                     'center': [0, 0],
+#                                     'radius': 5,
+#                                     'offset': [5, 10, 20, 30],
+#                                     'direction': [0],
+#                                     'randomize_order': True}
+#
+#     def getRunParameterDefaults(self):
+#         self.run_parameters = {'protocol_ID': 'OffcenterDisk',
+#                                'num_epochs': 75,
+#                                'pre_time': 0.5,
+#                                'stim_time': 1.0,
+#                                'tail_time': 1.0,
+#                                'idle_color': 0.5}
 
 
 class OffcenterGrid(BaseProtocol):
@@ -986,6 +986,100 @@ class OffcenterGrid(BaseProtocol):
                                'stim_time': 0.2,
                                'tail_time': 0.5,
                                'idle_color': 0.5}
+
+
+class TwoSpotGrid(BaseProtocol):
+    def __init__(self, cfg):
+        super().__init__(cfg)
+
+        self.getRunParameterDefaults()
+        self.getParameterDefaults()
+
+    def getEpochParameters(self):
+        theta = self.protocol_parameters['theta']
+        phi = self.protocol_parameters['phi']
+        current_offset = self.selectParametersFromLists((theta, phi), all_combinations=True,
+                                                        randomize_order=self.protocol_parameters['randomize_order'])
+        RFcenter = self.protocol_parameters['center']
+        first_spot_center = RFcenter.copy()
+        current_center = RFcenter.copy()
+        current_center[0] = RFcenter[0] + current_offset[0]
+        current_center[1] = RFcenter[1] + current_offset[1]
+        # adjust center to screen center
+        adj_center = self.adjustCenter(current_center)
+        adj_first_center = self.adjustCenter(first_spot_center)
+        radius = self.protocol_parameters['radius']
+        self.pre_epoch_parameters = {'name': 'MovingSpot',
+                                     'radius': radius,
+                                     'sphere_radius': 1,
+                                     'color': self.protocol_parameters['intensity'],
+                                     'theta': adj_first_center[0],
+                                     'phi': adj_first_center[1]}
+
+        self.epoch_parameters = {'name': 'MovingSpot',
+                                 'radius': radius,
+                                 'sphere_radius': 1,
+                                 'color': self.protocol_parameters['intensity'],
+                                 'theta': adj_center[0],
+                                 'phi': adj_center[1]}
+
+        self.convenience_parameters = {'current_theta': current_offset[0],
+                                      'current_phi': current_offset[1]}
+
+    def getParameterDefaults(self):
+        self.protocol_parameters = {'intensity': 0.0,
+                                    'center': [0, 0],
+                                    'radius': 5,
+                                    'theta': [-20, -15, -10, -5, 0, 5, 10, 15, 20],
+                                    'phi': [-20, -15, -10, -5, 0, 5, 10, 15, 20],
+                                    'randomize_order': True}
+
+    def getRunParameterDefaults(self):
+        self.run_parameters = {'protocol_ID': 'TwoSpotGrid',
+                               'num_epochs': 81,
+                               'pre_time': 0.5,
+                               'stim_time': 0.2,
+                               'tail_time': 0.5,
+                               'idle_color': 0.5}
+
+    def loadStimuli(self, client):
+        # bypassing the load stim here because I loaded it in startStimuli
+        pass
+
+    def startStimuli(self, client, append_stim_frames=False, print_profile=True):
+        # pre time
+        bg = self.run_parameters.get('idle_color')
+        multicall = flyrpc.multicall.MyMultiCall(client.manager)
+        multicall.load_stim('ConstantBackground', color=[bg, bg, bg, 1.0])
+        passedParameters = self.pre_epoch_parameters.copy()
+        multicall.load_stim(**passedParameters, hold=True)
+        multicall()
+        multicall.start_stim(append_stim_frames=append_stim_frames)
+        multicall()
+        sleep(self.run_parameters['pre_time'])
+
+        # stim time
+        bg = self.run_parameters.get('idle_color')
+        multicall = flyrpc.multicall.MyMultiCall(client.manager)
+        multicall.load_stim('ConstantBackground', color=[bg, bg, bg, 1.0])
+        passedParameters0 = self.pre_epoch_parameters.copy()
+        passedParameters = self.epoch_parameters.copy()
+        multicall.load_stim(**passedParameters0, hold=True)
+        multicall.load_stim(**passedParameters, hold=True)
+        multicall()
+        multicall = flyrpc.multicall.MyMultiCall(client.manager)
+        multicall.start_stim(append_stim_frames=append_stim_frames)
+        multicall.start_corner_square()
+        multicall()
+        sleep(self.run_parameters['stim_time'])
+
+        # tail time
+        multicall = flyrpc.multicall.MyMultiCall(client.manager)
+        multicall.stop_stim(print_profile=print_profile)
+        multicall.black_corner_square()
+        multicall()
+
+        sleep(self.run_parameters['tail_time'])
 
 
 # class ExpandingRectangle(BaseProtocol):
