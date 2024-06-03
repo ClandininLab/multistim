@@ -1001,7 +1001,10 @@ class TwoSpotGrid(BaseProtocol):
         current_offset = self.selectParametersFromLists((theta, phi), all_combinations=True,
                                                         randomize_order=self.protocol_parameters['randomize_order'])
         RFcenter = self.protocol_parameters['center']
+        first_spot_offset = self.protocol_parameters['offset']
         first_spot_center = RFcenter.copy()
+        first_spot_center[0] = RFcenter[0] + first_spot_offset[0]
+        first_spot_center[1] = RFcenter[1] + first_spot_offset[1]
         current_center = RFcenter.copy()
         current_center[0] = RFcenter[0] + current_offset[0]
         current_center[1] = RFcenter[1] + current_offset[1]
@@ -1029,6 +1032,7 @@ class TwoSpotGrid(BaseProtocol):
     def getParameterDefaults(self):
         self.protocol_parameters = {'intensity': 0.0,
                                     'center': [0, 0],
+                                    'offset': [0, 0],  # offset of the first spot to RF center
                                     'radius': 5,
                                     'theta': [-20, -15, -10, -5, 0, 5, 10, 15, 20],
                                     'phi': [-20, -15, -10, -5, 0, 5, 10, 15, 20],
@@ -1037,9 +1041,9 @@ class TwoSpotGrid(BaseProtocol):
     def getRunParameterDefaults(self):
         self.run_parameters = {'protocol_ID': 'TwoSpotGrid',
                                'num_epochs': 81,
-                               'pre_time': 0.5,
+                               'pre_time': 0.2,
                                'stim_time': 0.2,
-                               'tail_time': 0.5,
+                               'tail_time': 0.8,
                                'idle_color': 0.5}
 
     def loadStimuli(self, client):
