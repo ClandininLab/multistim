@@ -180,7 +180,7 @@ def stimulus_triggered_average(ID: ImagingDataObject, timestamps, brain, stimulu
     return type2ind, ensemble, relative_time
 
 
-def get_responses_per_condition(ID: ImagingDataObject, roi_data, para_key=['color'], run_para_key=None):
+def get_responses_per_condition(ID: ImagingDataObject, roi_data, para_key=['color'], run_para_key=None, remove_extreme_value=False):
     stims, type2ind = getStimulusTypes(ID, para_key, run_para_key)
     run_parameters = ID.getRunParameters()
     ensemble = [[] for _ in type2ind.keys()]
@@ -191,8 +191,9 @@ def get_responses_per_condition(ID: ImagingDataObject, roi_data, para_key=['colo
         ensemble[which_type].append(trace)
         relative_time = roi_data['time_vector'] - run_parameters['pre_time']
 
-    for ind in type2ind.values():
-        ensemble[ind] = remove_extreme_trace(ensemble[ind])
+    if remove_extreme_value:
+        for ind in type2ind.values():
+            ensemble[ind] = remove_extreme_trace(ensemble[ind])
 
     return type2ind, ensemble, relative_time
 
