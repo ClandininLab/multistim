@@ -1012,7 +1012,7 @@ class TwoSpotGrid(BaseProtocol):
         adj_center = self.adjustCenter(current_center)
         adj_first_center = self.adjustCenter(first_spot_center)
         radius = self.protocol_parameters['radius']
-        self.pre_epoch_parameters = {'name': 'MovingSpot',
+        self.first_epoch_parameters = {'name': 'MovingSpot',
                                      'radius': radius,
                                      'sphere_radius': 1,
                                      'color': self.protocol_parameters['intensity'],
@@ -1033,6 +1033,7 @@ class TwoSpotGrid(BaseProtocol):
         self.protocol_parameters = {'intensity': 0.0,
                                     'center': [0, 0],
                                     'offset': [0, 0],  # offset of the first spot to RF center
+                                    'first_spot_time': 0.1,  # in second
                                     'radius': 5,
                                     'theta': [-20, -15, -10, -5, 0, 5, 10, 15, 20],
                                     'phi': [-20, -15, -10, -5, 0, 5, 10, 15, 20],
@@ -1046,36 +1047,31 @@ class TwoSpotGrid(BaseProtocol):
                                'tail_time': 0.8,
                                'idle_color': 0.5}
 
-    def loadStimuli(self, client):
-        # bypassing the load stim here because I loaded it in startStimuli
-        pass
-
     def startStimuli(self, client, append_stim_frames=False, print_profile=True):
-        # pre time
+        first_spot_time = self.protocol_parameters['first_spot_time']
+        two_spot_time = self.run_parameters['stim_time'] - first_spot_time
         bg = self.run_parameters.get('idle_color')
         multicall = flyrpc.multicall.MyMultiCall(client.manager)
         multicall.load_stim('ConstantBackground', color=[bg, bg, bg, 1.0])
-        passedParameters = self.pre_epoch_parameters.copy()
+        passedParameters = self.first_epoch_parameters.copy()
         multicall.load_stim(**passedParameters, hold=True)
         multicall()
         multicall.start_stim(append_stim_frames=append_stim_frames)
+        multicall.start_corner_square()
         multicall()
-        sleep(self.run_parameters['pre_time'])
-
+        sleep(first_spot_time)
         # stim time
-        bg = self.run_parameters.get('idle_color')
         multicall = flyrpc.multicall.MyMultiCall(client.manager)
         multicall.load_stim('ConstantBackground', color=[bg, bg, bg, 1.0])
-        passedParameters0 = self.pre_epoch_parameters.copy()
+        passedParameters0 = self.first_epoch_parameters.copy()
         passedParameters = self.epoch_parameters.copy()
         multicall.load_stim(**passedParameters0, hold=True)
         multicall.load_stim(**passedParameters, hold=True)
         multicall()
         multicall = flyrpc.multicall.MyMultiCall(client.manager)
         multicall.start_stim(append_stim_frames=append_stim_frames)
-        multicall.start_corner_square()
         multicall()
-        sleep(self.run_parameters['stim_time'])
+        sleep(two_spot_time)
 
         # tail time
         multicall = flyrpc.multicall.MyMultiCall(client.manager)
