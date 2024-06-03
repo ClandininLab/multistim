@@ -1047,7 +1047,13 @@ class TwoSpotGrid(BaseProtocol):
                                'tail_time': 0.8,
                                'idle_color': 0.5}
 
+    def loadStimuli(self, client):
+        # bypassing the load stim here because I loaded it in startStimuli
+        pass
+
     def startStimuli(self, client, append_stim_frames=False, print_profile=True):
+        sleep(self.run_parameters['pre_time'])
+
         first_spot_time = self.protocol_parameters['first_spot_time']
         two_spot_time = self.run_parameters['stim_time'] - first_spot_time
         bg = self.run_parameters.get('idle_color')
