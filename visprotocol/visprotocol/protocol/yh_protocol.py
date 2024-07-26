@@ -1236,6 +1236,85 @@ class MovingRectangle(BaseProtocol):
                                'idle_color': 0.5}
 
 
+class GridRectangle(BaseProtocol):
+    def __init__(self, cfg):
+        super().__init__(cfg)
+
+        self.getRunParameterDefaults()
+        self.getParameterDefaults()
+
+    def getEpochParameters(self):
+        theta = self.protocol_parameters['theta']
+        phi = self.protocol_parameters['phi']
+        # add zero to the end of theta, and start of phi, so that the grid starts at the center
+        augmented_theta = theta + [0.0] * len(phi)
+        augmented_phi = [0.0] * len(theta) + phi
+        # make augmented_angle to determine the angle of the bar
+        augmented_angle = [0.0] * len(theta) + [90.0] * len(phi)
+        current_center = self.selectParametersFromLists((augmented_theta, augmented_phi, augmented_angle), all_combinations=False,
+                                                        randomize_order=self.protocol_parameters['randomize_order'])
+        adj_center = self.adjustCenter(current_center[0:2])
+        self.epoch_parameters = self.getMovingPatchParameters(center=adj_center, angle=current_center[2], speed=0)
+
+
+    def getParameterDefaults(self):
+        self.protocol_parameters = {'width': 5.0,
+                                    'height': 80.0,
+                                    'color': 0.0,
+                                    'theta': [0, 10, -10],
+                                    'phi': [0, 10, -10],
+                                    'randomize_order': True}
+
+    def getRunParameterDefaults(self):
+        self.run_parameters = {'protocol_ID': 'MovingRectangle',
+                               'num_epochs': 40,
+                               'pre_time': 0.5,
+                               'stim_time': 0.5,
+                               'tail_time': 1.0,
+                               'idle_color': 0.5}
+
+
+class GridSpot(BaseProtocol):
+    def __init__(self, cfg):
+        super().__init__(cfg)
+
+        self.getRunParameterDefaults()
+        self.getParameterDefaults()
+
+    def getEpochParameters(self):
+        # adjust center to screen center
+        theta = self.protocol_parameters['theta']
+        phi = self.protocol_parameters['phi']
+        current_center = self.selectParametersFromLists((theta, phi), all_combinations=True,
+                                                        randomize_order=self.protocol_parameters['randomize_order'])
+        adj_center = self.adjustCenter(current_center)
+
+        self.epoch_parameters = {'name': 'MovingSpot',
+                                 'radius': self.protocol_parameters['radius'],
+                                 'sphere_radius': 1,
+                                 'color': self.protocol_parameters['intensity'],
+                                 'theta': adj_center[0],
+                                 'phi': adj_center[1]}
+
+        self.convenience_parameters = {'current_theta': current_center[0],
+                                       'current_phi': current_center[1]}
+
+    def getParameterDefaults(self):
+        self.protocol_parameters = {'intensity': 0.0,
+                                    'theta': [0.0],
+                                    'phi': [0.0],
+                                    'radius': 2.5,
+                                    'randomize_order': True}
+
+    def getRunParameterDefaults(self):
+        self.run_parameters = {'protocol_ID': 'GridSpot',
+                               'num_epochs': 75,
+                               'pre_time': 0.5,
+                               'stim_time': 1.0,
+                               'tail_time': 1.0,
+                               'idle_color': 0.5}
+
+
 class UniformFlash(BaseProtocol):
     def __init__(self, cfg):
         super().__init__(cfg)
