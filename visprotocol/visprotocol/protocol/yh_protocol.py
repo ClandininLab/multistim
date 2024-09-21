@@ -1248,15 +1248,19 @@ class GridRectangle(BaseProtocol):
     def getEpochParameters(self):
         theta = self.protocol_parameters['theta']
         phi = self.protocol_parameters['phi']
+        mean_theta = np.mean(theta).item()
+        mean_phi = np.mean(phi).item()
         # add zero to the end of theta, and start of phi, so that the grid starts at the center
-        augmented_theta = theta + [0.0] * len(phi)
-        augmented_phi = [0.0] * len(theta) + phi
+        augmented_theta = theta + [mean_theta] * len(phi)
+        augmented_phi = [mean_phi] * len(theta) + phi
         # make augmented_angle to determine the angle of the bar
         augmented_angle = [0.0] * len(theta) + [90.0] * len(phi)
         current_center = self.selectParametersFromLists((augmented_theta, augmented_phi, augmented_angle), all_combinations=False,
                                                         randomize_order=self.protocol_parameters['randomize_order'])
         adj_center = self.adjustCenter(current_center[0:2])
         self.epoch_parameters = self.getMovingPatchParameters(center=adj_center, angle=current_center[2], speed=0)
+        self.convenience_parameters = {'current_theta': current_center[0],
+                                       'current_phi': current_center[1]}
 
 
     def getParameterDefaults(self):
@@ -1268,7 +1272,7 @@ class GridRectangle(BaseProtocol):
                                     'randomize_order': True}
 
     def getRunParameterDefaults(self):
-        self.run_parameters = {'protocol_ID': 'MovingRectangle',
+        self.run_parameters = {'protocol_ID': 'GridRectangle',
                                'num_epochs': 40,
                                'pre_time': 0.5,
                                'stim_time': 0.5,
