@@ -893,54 +893,6 @@ class StillRings(BaseProtocol):
                                'idle_color': 0.5}
 
 
-# class OffcenterDisk(BaseProtocol):
-#     def __init__(self, cfg):
-#         super().__init__(cfg)
-#
-#         self.getRunParameterDefaults()
-#         self.getParameterDefaults()
-#
-#     def getEpochParameters(self):
-#         stim_time = self.run_parameters['stim_time']
-#         offset = self.protocol_parameters['offset']
-#         direction = self.protocol_parameters['direction']  # in degrees
-#         current_offset, current_direction = self.selectParametersFromLists((offset, direction), all_combinations=True,
-#                                                                             randomize_order=self.protocol_parameters['randomize_order'])
-#         current_direction = np.radians(current_direction)  # convert to radians
-#         RFcenter = self.protocol_parameters['center']
-#         current_center = RFcenter.copy()
-#         current_center[0] = RFcenter[0] + current_offset * np.cos(current_direction)
-#         current_center[1] = RFcenter[1] + current_offset * np.sin(current_direction)
-#         # adjust center to screen center
-#         adj_center = self.adjustCenter(current_center)
-#         radius = self.protocol_parameters['radius']
-#         self.epoch_parameters = {'name': 'MovingSpot',
-#                                  'radius': radius,
-#                                  'sphere_radius': 1,
-#                                  'color': self.protocol_parameters['intensity'],
-#                                  'theta': adj_center[0],
-#                                  'phi': adj_center[1]}
-#
-#         self.convenience_parameters = {'current_offset': current_offset,
-#                                       'current_direction': current_direction}
-#
-#     def getParameterDefaults(self):
-#         self.protocol_parameters = {'intensity': 0.0,
-#                                     'center': [0, 0],
-#                                     'radius': 5,
-#                                     'offset': [5, 10, 20, 30],
-#                                     'direction': [0],
-#                                     'randomize_order': True}
-#
-#     def getRunParameterDefaults(self):
-#         self.run_parameters = {'protocol_ID': 'OffcenterDisk',
-#                                'num_epochs': 75,
-#                                'pre_time': 0.5,
-#                                'stim_time': 1.0,
-#                                'tail_time': 1.0,
-#                                'idle_color': 0.5}
-
-
 class OffcenterGrid(BaseProtocol):
     def __init__(self, cfg):
         super().__init__(cfg)
@@ -1088,64 +1040,6 @@ class TwoSpotGrid(BaseProtocol):
         sleep(self.run_parameters['tail_time'])
 
 
-# class ExpandingRectangle(BaseProtocol):
-#     def __init__(self, cfg):
-#         super().__init__(cfg)
-#
-#         self.getRunParameterDefaults()
-#         self.getParameterDefaults()
-#
-#     def getEpochParameters(self):
-#         angle = self.protocol_parameters['angle']
-#         current_angle = self.selectParametersFromLists(angle, randomize_order=self.protocol_parameters['randomize_order'])
-#         stim_time = self.run_parameters['stim_time']
-#         start_size = self.protocol_parameters['start_size']
-#         end_size = self.protocol_parameters['end_size']
-#         # adjust center to screen center
-#         adj_center = self.adjustCenter(self.protocol_parameters['center'])
-#
-#         loom_speed = self.protocol_parameters['speed']  # deg/sec
-#         startR = (0, start_size)
-#         final_r = start_size + stim_time * loom_speed
-#         if final_r < end_size:
-#             endR = (stim_time, final_r)
-#             r = [startR, endR]
-#         else:
-#             stop_time = np.abs(start_size - end_size) / loom_speed
-#             middleR = (stop_time, end_size)
-#             endR = (stim_time, end_size)
-#             r = [startR, middleR, endR]
-#
-#         h_traj = {'name': 'tv_pairs',
-#                   'tv_pairs': r,
-#                   'kind': 'linear'}
-#         self.epoch_parameters = self.getMovingPatchParameters(center=adj_center,
-#                                                               angle=current_angle,
-#                                                               height=h_traj,
-#                                                               speed=0,
-#                                                               color=self.protocol_parameters['intensity'])
-#
-#         self.convenience_parameters = {'current_angle': current_angle}
-#
-#     def getParameterDefaults(self):
-#         self.protocol_parameters = {'width': 5.0,
-#                                     'start_size': 5.0,
-#                                     'end_size': 100.0,
-#                                     'intensity': 0.0,
-#                                     'center': [0, 0],
-#                                     'speed': 80.0,
-#                                     'angle': [0.0, 90.0],
-#                                     'randomize_order': True}
-#
-#     def getRunParameterDefaults(self):
-#         self.run_parameters = {'protocol_ID': 'ExpandingRectangle',
-#                                'num_epochs': 40,
-#                                'pre_time': 0.5,
-#                                'stim_time': 3.0,
-#                                'tail_time': 1.0,
-#                                'idle_color': 0.5}
-
-
 class ExpandingRectangle(BaseProtocol):
     def __init__(self, cfg):
         super().__init__(cfg)
@@ -1201,7 +1095,100 @@ class ExpandingRectangle(BaseProtocol):
                                'stim_time': 0.3,
                                'tail_time': 1.0,
                                'idle_color': 0.5}
+        
 
+class TwoEpandingBar(BaseProtocol):
+    def __init__(self, cfg):
+        super().__init__(cfg)
+
+        self.getRunParameterDefaults()
+        self.getParameterDefaults()
+
+    def getEpochParameters(self):
+        angle = self.protocol_parameters['angle']
+        angle_offset = self.protocol_parameters['angle_offset']
+        current_angle, current_offset = self.selectParametersFromLists((angle, angle_offset),
+                                                                       randomize_order=self.protocol_parameters['randomize_order'])
+        stim_time = self.run_parameters['stim_time']
+        start_size = 0.0
+        end_size = self.protocol_parameters['end_size']
+        # adjust center to screen center
+        adj_center = self.adjustCenter(self.protocol_parameters['center'])
+
+        speed = self.protocol_parameters['speed']  # deg/sec
+        startR = (0, start_size)
+        final_r = start_size + stim_time * speed
+        if final_r < end_size:
+            endR = (stim_time, final_r)
+            r = [startR, endR]
+        else:
+            stop_time = np.abs(start_size - end_size) / speed
+            middleR = (stop_time, end_size)
+            endR = (stim_time, end_size)
+            r = [startR, middleR, endR]
+
+        h_traj = {'name': 'tv_pairs',
+                  'tv_pairs': r,
+                  'kind': 'linear'}
+        self.first_bar_parameters = self.getExpandingPatchParameters(center=adj_center,
+                                                                     angle=current_angle + current_offset,
+                                                                     height=h_traj,
+                                                                     speed=0,
+                                                                     color=self.protocol_parameters['intensity'])
+        
+        self.epoch_parameters = self.getExpandingPatchParameters(center=adj_center,
+                                                                 angle=current_angle,
+                                                                 height=h_traj,
+                                                                 speed=0,
+                                                                 color=self.protocol_parameters['intensity'])
+
+        self.convenience_parameters = {'current_angle': current_angle, 'current_offset': current_offset}
+
+    def getParameterDefaults(self):
+        self.protocol_parameters = {'width': 5.0,
+                                    'end_size': 20.0,
+                                    'intensity': 0.0,
+                                    'center': [0, 0],
+                                    'speed': 100.0,
+                                    'angle': [0.0, 90.0],
+                                    'angle_offset': [90.0],
+                                    'randomize_order': True}
+
+    def getRunParameterDefaults(self):
+        self.run_parameters = {'protocol_ID': 'TwoExpandingBar',
+                               'num_epochs': 40,
+                               'pre_time': 0.5,
+                               'stim_time': 0.3,
+                               'tail_time': 1.0,
+                               'idle_color': 0.5}
+
+    def loadStimuli(self, client):
+        # bypassing the load stim here because I loaded it in startStimuli
+        pass
+
+    def startStimuli(self, client, append_stim_frames=False, print_profile=True):
+        sleep(self.run_parameters['pre_time'])
+
+        bg = self.run_parameters.get('idle_color')
+        multicall = flyrpc.multicall.MyMultiCall(client.manager)
+        multicall.load_stim('ConstantBackground', color=[bg, bg, bg, 1.0])
+        passedParameters0 = self.first_bar_parameters.copy()
+        passedParameters = self.epoch_parameters.copy()
+        multicall.load_stim(**passedParameters0, hold=True)
+        multicall.load_stim(**passedParameters, hold=True)
+        multicall()
+        multicall.start_stim(append_stim_frames=append_stim_frames)
+        multicall.start_corner_square()
+        multicall()
+        sleep(self.run_parameters['stim_time'])
+
+        # tail time
+        multicall = flyrpc.multicall.MyMultiCall(client.manager)
+        multicall.stop_stim(print_profile=print_profile)
+        multicall.black_corner_square()
+        multicall()
+
+        sleep(self.run_parameters['tail_time'])
 
 class MovingRectangle(BaseProtocol):
     def __init__(self, cfg):
