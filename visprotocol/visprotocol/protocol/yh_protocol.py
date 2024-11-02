@@ -1396,6 +1396,57 @@ class DriftingSquareGrating(BaseProtocol):
                                'idle_color': 0.5}
 
 
+class SphericalCheckerboardWhiteNoise(BaseProtocol):
+    def __init__(self, cfg):
+        super().__init__(cfg)
+
+        self.getRunParameterDefaults()
+        self.getParameterDefaults()
+
+    def getParameterDefaults(self):
+        self.protocol_parameters = {'patch_size': 5.0,
+                                    'update_rate': 20.0,
+                                    'rand_min': 0.0,
+                                    'rand_max': 1.0,
+                                    'grid_width': 60,
+                                    'grid_height': 60,
+                                    'center': [0.0, 0.0]}
+
+    def getEpochParameters(self):
+        stimulus_ID = 'RandomGridOnSphericalPatch'
+        adj_center = self.adjustCenter(self.protocol_parameters['center'])
+
+        start_seed = int(np.random.choice(range(int(1e6))))
+        color = [0, 0, 1, 1] # blue only
+
+        distribution_data = {'name': 'Ternary',
+                             'args': [],
+                             'kwargs': {'rand_min': self.protocol_parameters['rand_min'],
+                                        'rand_max': self.protocol_parameters['rand_max']}}
+
+        self.epoch_parameters = {'name': stimulus_ID,
+                                 'patch_width': self.protocol_parameters['patch_size'],
+                                 'patch_height': self.protocol_parameters['patch_size'],
+                                 'width': self.protocol_parameters['grid_width'],
+                                 'height': self.protocol_parameters['grid_height'],
+                                 'start_seed': start_seed,
+                                 'update_rate': self.protocol_parameters['update_rate'],
+                                 'distribution_data': distribution_data,
+                                 'theta': adj_center[0],
+                                 'phi': adj_center[1],
+                                 'color': color}
+
+        self.convenience_parameters = {'start_seed': start_seed}
+
+    def getRunParameterDefaults(self):
+        self.run_parameters = {'protocol_ID': 'SphericalCheckerboardWhiteNoise',
+                               'num_epochs': 10,
+                               'pre_time': 2.0,
+                               'stim_time': 30.0,
+                               'tail_time': 2.0,
+                               'idle_color': 0.5}
+        
+
 class BTFgrating(BaseProtocol):
     def __init__(self, cfg):
         super().__init__(cfg)
